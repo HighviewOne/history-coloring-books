@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>History Coloring Books</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,800;9..144,900&family=Nunito:wght@400;500;600;700;800;900&family=Caveat:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Default: Warm Classroom theme — overridden by Tweaks */
+    --paper: #F6EFE0;
+    --paper-2: #ECE2CC;
+    --ink: #1F2933;
+    --ink-soft: #4A5568;
+    --rule: #D6C9AC;
+    --accent: #C8102E;      /* heritage red */
+    --accent-2: #1B4965;    /* deep navy */
+    --accent-3: #E8A33D;    /* mustard */
+    --green: #5A8F4A;
+    --bg-app: #2C2418;      /* outside tablet */
+    --font-display: 'Fraunces', Georgia, serif;
+    --font-body: 'Nunito', system-ui, sans-serif;
+    --font-hand: 'Caveat', cursive;
+    /* Sticker-shadow system — keep these consistent across surfaces */
+    --shadow-sm: 2px 2px 0 var(--ink);
+    --shadow-md: 4px 4px 0 var(--ink);
+    --shadow-lg: 6px 6px 0 var(--ink);
+    --shadow-xl: 8px 8px 0 var(--ink);
+    /* Ink stroke weights */
+    --stroke: 2.5px solid var(--ink);
+    --stroke-thin: 2px solid var(--ink);
+  }
+  html, body { margin: 0; padding: 0; height: 100%; background: var(--bg-app); color: var(--ink); font-family: var(--font-body); -webkit-font-smoothing: antialiased; overscroll-behavior: none; }
+  #root { width: 100%; height: 100%; }
+  * { box-sizing: border-box; }
+  button { font-family: inherit; cursor: pointer; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.18); border-radius: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+
+  /* Paper texture overlay reusable class */
+  .paper-grain {
+    background-image:
+      radial-gradient(rgba(31,41,51,0.04) 1px, transparent 1.2px),
+      radial-gradient(rgba(31,41,51,0.025) 1.5px, transparent 1.8px);
+    background-size: 6px 6px, 14px 14px;
+    background-position: 0 0, 3px 7px;
+  }
+  .paper-fiber {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' seed='4'/><feColorMatrix values='0 0 0 0 0.12 0 0 0 0 0.10 0 0 0 0 0.06 0 0 0 0.07 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+
+  /* shake animation for wrong answers */
+  @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
+  @keyframes pop { 0%{transform:scale(.7);opacity:0} 60%{transform:scale(1.15)} 100%{transform:scale(1);opacity:1} }
+  @keyframes float-up { 0%{transform:translateY(0);opacity:0} 20%{opacity:1} 100%{transform:translateY(-120px);opacity:0} }
+  @keyframes confetti-fall { to { transform: translate3d(var(--cx,0), var(--cy,1000px), 0) rotate(var(--cr,720deg)); opacity: 0; } }
+  @keyframes wave-flag { 0%,100%{transform:rotate(-2deg)} 50%{transform:rotate(2deg)} }
+  @keyframes sun-pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.06)} }
+  @keyframes twinkle { 0%,100%{opacity:.4; transform:scale(.85)} 50%{opacity:1; transform:scale(1.1)} }
+  @keyframes gentle-bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+  @keyframes spin-slow { to { transform: rotate(360deg) } }
+  @keyframes glow-pulse { 0%,100%{filter: drop-shadow(0 0 0 rgba(255,255,255,0))} 50%{filter: drop-shadow(0 0 12px rgba(255,235,180,0.85))} }
+  @keyframes draw-stroke { from { stroke-dashoffset: 1200 } to { stroke-dashoffset: 0 } }
+  @keyframes flame-flicker { 0%,100%{transform: scale(1,1)} 50%{transform: scale(1.05, 0.95)} }
+
+  /* placeholder dotted box (for crayon-stroke decoration) */
+  .crayon-dash { background-image: repeating-linear-gradient(90deg, var(--ink) 0 6px, transparent 6px 12px); height: 2px; }
+</style>
+</head>
+<body>
+<div id="root">
+  <div style="display:flex;align-items:center;justify-content:center;height:100%;color:#F6EFE0;font-family:'Fraunces',serif">Loading…</div>
+</div>
+
+<!-- React + Babel -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<!-- App -->
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="audio.jsx"></script>
+<script type="text/babel" src="pages-data.jsx"></script>
+<script type="text/babel" src="new-pages.jsx"></script>
+<script type="text/babel" src="us-history-pages.jsx"></script>
+<script type="text/babel" src="europe-history-pages.jsx"></script>
+<script type="text/babel" src="greek-roman-pages.jsx"></script>
+<script type="text/babel" src="egyptian-history-pages.jsx"></script>
+<script type="text/babel" src="latin-american-pages.jsx"></script>
+<script type="text/babel" src="japan-history-pages.jsx"></script>
+<script type="text/babel" src="china-history-pages.jsx"></script>
+<script type="text/babel" src="india-history-pages.jsx"></script>
+<script type="text/babel" src="africa-history-pages.jsx"></script>
+<script type="text/babel" src="foundational-pages.jsx"></script>
+<script type="text/babel" src="next-set-pages.jsx"></script>
+<script type="text/babel" src="round-14-pages.jsx"></script>
+<script type="text/babel" src="round-15-pages.jsx"></script>
+<script type="text/babel" src="brush-layer.jsx"></script>
+<script type="text/babel" src="library-screen.jsx"></script>
+<script type="text/babel" src="coloring-screen.jsx"></script>
+<script type="text/babel" src="celebration.jsx"></script>
+<script type="text/babel" src="speech-game.jsx"></script>
+<script type="text/babel" src="dashboard-bits.jsx"></script>
+<script type="text/babel" src="dashboard.jsx"></script>
+<script type="text/babel" src="app.jsx"></script>
+
+<script type="text/babel">
+  const { useState, useEffect } = React;
+  // Default tweaks block — host rewrites this on persist
+  window.__TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+    "theme": "warm-classroom",
+    "art_style": "classic",
+    "animation_style": "alive",
+    "speech_game_style": "tap-choice",
+    "show_chrome": true,
+    "age_density": "mid",
+    "sound_on": true,
+    "auto_narrate": true,
+    "voice_override": "auto",
+    "voice_rate": 100,
+    "voice_pitch": 100
+  }/*EDITMODE-END*/;
+  ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>History Coloring Books — Mobile</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,800;9..144,900&family=Nunito:wght@400;500;600;700;800;900&family=Caveat:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Default: Warm Classroom theme — overridden by Tweaks */
+    --paper: #F6EFE0;
+    --paper-2: #ECE2CC;
+    --ink: #1F2933;
+    --ink-soft: #4A5568;
+    --rule: #D6C9AC;
+    --accent: #C8102E;
+    --accent-2: #1B4965;
+    --accent-3: #E8A33D;
+    --green: #5A8F4A;
+    --bg-app: #1a1611;
+    --font-display: 'Fraunces', Georgia, serif;
+    --font-body: 'Nunito', system-ui, sans-serif;
+    --font-hand: 'Caveat', cursive;
+  }
+  html, body { margin: 0; padding: 0; height: 100%; background: var(--bg-app); color: var(--ink); font-family: var(--font-body); -webkit-font-smoothing: antialiased; overscroll-behavior: none; }
+  #root { width: 100%; height: 100%; }
+  * { box-sizing: border-box; }
+  button { font-family: inherit; cursor: pointer; }
+  ::-webkit-scrollbar { width: 0; height: 0; }
+
+  /* Paper texture overlays */
+  .paper-grain {
+    background-image:
+      radial-gradient(rgba(31,41,51,0.04) 1px, transparent 1.2px),
+      radial-gradient(rgba(31,41,51,0.025) 1.5px, transparent 1.8px);
+    background-size: 6px 6px, 14px 14px;
+    background-position: 0 0, 3px 7px;
+  }
+  .paper-fiber {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' seed='4'/><feColorMatrix values='0 0 0 0 0.12 0 0 0 0 0.10 0 0 0 0 0.06 0 0 0 0.07 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+
+  /* Animations (shared with desktop) */
+  @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
+  @keyframes pop { 0%{transform:scale(.7);opacity:0} 60%{transform:scale(1.15)} 100%{transform:scale(1);opacity:1} }
+  @keyframes float-up { 0%{transform:translateY(0);opacity:0} 20%{opacity:1} 100%{transform:translateY(-100px);opacity:0} }
+  @keyframes confetti-fall { to { transform: translate3d(var(--cx,0), var(--cy,900px), 0) rotate(var(--cr,720deg)); opacity: 0; } }
+  @keyframes wave-flag { 0%,100%{transform:rotate(-2deg)} 50%{transform:rotate(2deg)} }
+  @keyframes sun-pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.06)} }
+  @keyframes twinkle { 0%,100%{opacity:.4; transform:scale(.85)} 50%{opacity:1; transform:scale(1.1)} }
+  @keyframes gentle-bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+  @keyframes spin-slow { to { transform: rotate(360deg) } }
+  @keyframes glow-pulse { 0%,100%{filter: drop-shadow(0 0 0 rgba(255,255,255,0))} 50%{filter: drop-shadow(0 0 12px rgba(255,235,180,0.85))} }
+  @keyframes draw-stroke { from { stroke-dashoffset: 1200 } to { stroke-dashoffset: 0 } }
+  @keyframes flame-flicker { 0%,100%{transform: scale(1,1)} 50%{transform: scale(1.05, 0.95)} }
+  .crayon-dash { background-image: repeating-linear-gradient(90deg, var(--ink) 0 6px, transparent 6px 12px); height: 2px; }
+
+  /* Phone-stage wrapper — scales to fit viewport */
+  #phone-stage {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+    background:
+      radial-gradient(120% 80% at 50% 20%, rgba(255,255,255,0.04), transparent 60%),
+      #1a1611;
+  }
+  #phone {
+    transform-origin: center center;
+  }
+  .phone-shell {
+    width: 402px;
+    height: 874px;
+    border-radius: 56px;
+    background: #0a0a0a;
+    padding: 6px;
+    position: relative;
+    box-shadow:
+      0 0 0 1px rgba(0,0,0,0.55),
+      0 30px 70px rgba(0,0,0,0.45),
+      0 8px 16px rgba(0,0,0,0.25),
+      inset 0 0 0 1px rgba(255,255,255,0.05);
+  }
+  .phone-screen {
+    width: 100%; height: 100%;
+    border-radius: 50px;
+    background: var(--paper);
+    overflow: hidden;
+    position: relative;
+  }
+  /* Dynamic island */
+  .island {
+    position: absolute; top: 10px; left: 50%;
+    transform: translateX(-50%);
+    width: 116px; height: 34px;
+    border-radius: 22px;
+    background: #000;
+    z-index: 200;
+    pointer-events: none;
+  }
+  /* iOS status bar — drawn inside the screen */
+  .status-bar {
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 54px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 28px 0;
+    z-index: 100;
+    pointer-events: none;
+    font-family: -apple-system, "SF Pro", system-ui;
+    font-weight: 600; font-size: 16px;
+    color: var(--ink);
+  }
+  .status-bar .right { display: flex; gap: 6px; align-items: center; }
+  /* Home indicator */
+  .home-indicator {
+    position: absolute; bottom: 6px; left: 50%;
+    transform: translateX(-50%);
+    width: 134px; height: 5px; border-radius: 100px;
+    background: rgba(31,41,51,0.35);
+    z-index: 250;
+    pointer-events: none;
+  }
+  /* App content sits inside phone-screen, offset for status bar */
+  .app-viewport {
+    position: absolute;
+    top: 54px; left: 0; right: 0; bottom: 24px;
+    overflow: hidden;
+    background: var(--paper);
+  }
+</style>
+</head>
+<body>
+<div id="phone-stage">
+  <div id="phone">
+    <div class="phone-shell">
+      <div class="phone-screen">
+        <div class="island"></div>
+        <div class="status-bar">
+          <span>9:41</span>
+          <span class="right">
+            <svg width="18" height="11" viewBox="0 0 19 12"><rect x="0" y="7.5" width="3.2" height="4.5" rx="0.7" fill="currentColor"/><rect x="4.8" y="5" width="3.2" height="7" rx="0.7" fill="currentColor"/><rect x="9.6" y="2.5" width="3.2" height="9.5" rx="0.7" fill="currentColor"/><rect x="14.4" y="0" width="3.2" height="12" rx="0.7" fill="currentColor"/></svg>
+            <svg width="16" height="11" viewBox="0 0 17 12"><path d="M8.5 3.2C10.8 3.2 12.9 4.1 14.4 5.6L15.5 4.5C13.7 2.7 11.2 1.5 8.5 1.5C5.8 1.5 3.3 2.7 1.5 4.5L2.6 5.6C4.1 4.1 6.2 3.2 8.5 3.2Z" fill="currentColor"/><path d="M8.5 6.8C9.9 6.8 11.1 7.3 12 8.2L13.1 7.1C11.8 5.9 10.2 5.1 8.5 5.1C6.8 5.1 5.2 5.9 3.9 7.1L5 8.2C5.9 7.3 7.1 6.8 8.5 6.8Z" fill="currentColor"/><circle cx="8.5" cy="10.5" r="1.5" fill="currentColor"/></svg>
+            <svg width="26" height="12" viewBox="0 0 27 13"><rect x="0.5" y="0.5" width="23" height="12" rx="3.5" stroke="currentColor" stroke-opacity="0.4" fill="none"/><rect x="2" y="2" width="18" height="9" rx="2" fill="currentColor"/><path d="M25 4.5V8.5C25.8 8.2 26.5 7.2 26.5 6.5C26.5 5.8 25.8 4.8 25 4.5Z" fill="currentColor" fill-opacity="0.5"/></svg>
+          </span>
+        </div>
+        <div class="app-viewport">
+          <div id="root">
+            <div style="display:flex;align-items:center;justify-content:center;height:100%;color:#1F2933;font-family:'Fraunces',serif">Loading…</div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- React + Babel -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<!-- Shared modules (data, audio, brush, components, etc.) -->
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="audio.jsx"></script>
+<script type="text/babel" src="pages-data.jsx"></script>
+<script type="text/babel" src="new-pages.jsx"></script>
+<script type="text/babel" src="us-history-pages.jsx"></script>
+<script type="text/babel" src="europe-history-pages.jsx"></script>
+<script type="text/babel" src="greek-roman-pages.jsx"></script>
+<script type="text/babel" src="egyptian-history-pages.jsx"></script>
+<script type="text/babel" src="latin-american-pages.jsx"></script>
+<script type="text/babel" src="japan-history-pages.jsx"></script>
+<script type="text/babel" src="china-history-pages.jsx"></script>
+<script type="text/babel" src="india-history-pages.jsx"></script>
+<script type="text/babel" src="africa-history-pages.jsx"></script>
+<script type="text/babel" src="foundational-pages.jsx"></script>
+<script type="text/babel" src="next-set-pages.jsx"></script>
+<script type="text/babel" src="round-14-pages.jsx"></script>
+<script type="text/babel" src="round-15-pages.jsx"></script>
+<script type="text/babel" src="brush-layer.jsx"></script>
+
+<!-- Mobile-specific screens -->
+<script type="text/babel" src="mobile-library.jsx"></script>
+<script type="text/babel" src="mobile-coloring.jsx"></script>
+<script type="text/babel" src="mobile-modals.jsx"></script>
+<script type="text/babel" src="mobile-app.jsx"></script>
+
+<script type="text/babel">
+  window.__TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+    "theme": "warm-classroom",
+    "animation_style": "alive",
+    "speech_game_style": "tap-choice",
+    "age_density": "mid",
+    "sound_on": true,
+    "auto_narrate": true
+  }/*EDITMODE-END*/;
+  ReactDOM.createRoot(document.getElementById('root')).render(<MobileApp />);
+
+  // Scale phone to fit viewport — leave breathing room
+  function fitPhone() {
+    const phone = document.getElementById('phone');
+    const stage = document.getElementById('phone-stage');
+    if (!phone || !stage) return;
+    const stageRect = stage.getBoundingClientRect();
+    const padding = 48;
+    const availW = stageRect.width - padding;
+    const availH = stageRect.height - padding;
+    const scale = Math.min(availW / 402, availH / 874, 1);
+    phone.style.transform = `scale(${scale})`;
+  }
+  fitPhone();
+  window.addEventListener('resize', fitPhone);
+  setTimeout(fitPhone, 100);
+  setTimeout(fitPhone, 500);
+</script>
+</body>
+</html>
