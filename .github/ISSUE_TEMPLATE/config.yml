@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Live App
+    url: https://highviewone.github.io/history-coloring-books/
+    about: Try the app before filing an issue
