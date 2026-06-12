@@ -9,6 +9,7 @@ An interactive learning app for elementary students — covering US History and 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-GitHub%20Pages-C8102E?style=for-the-badge&logo=github)](https://highviewone.github.io/history-coloring-books/)
 [![Desktop](https://img.shields.io/badge/Version-Desktop%20%2F%20Tablet-1B4965?style=for-the-badge&logo=monitor)](https://highviewone.github.io/history-coloring-books/History%20Coloring%20Books.html)
 [![Mobile](https://img.shields.io/badge/Version-Mobile%20Preview-E8A33D?style=for-the-badge&logo=apple)](https://highviewone.github.io/history-coloring-books/History%20Coloring%20Books%20Mobile.html)
+[![License: MIT](https://img.shields.io/badge/License-MIT-5A8F4A?style=for-the-badge)](LICENSE)
 
 </div>
 
