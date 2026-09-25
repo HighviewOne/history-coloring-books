@@ -74,7 +74,7 @@ function MobileColoringScreen({ page, progress, onProgress, onBack, onComplete, 
   const pct = total ? Math.round((colored / total) * 100) : 0;
 
   useEffectMCol(() => {
-    if (pct === 50 && !progress?.midShown) {
+    if (pct >= 50 && pct < 100 && !progress?.midShown) {
       setShowHint(true);
       onProgress(page.id, { ...progress, midShown: true, fills });
     }

@@ -158,9 +158,17 @@ const __TWEAKS_STYLE = `
 
 // ── useTweaks ───────────────────────────────────────────────────────────────
 // Single source of truth for tweak values. setTweak persists via the host
-// (__edit_mode_set_keys → host rewrites the EDITMODE block on disk).
+// (__edit_mode_set_keys → host rewrites the EDITMODE block on disk). Outside
+// the host nothing answers that message, so edits are also saved to
+// localStorage and layered over the defaults on load.
+const TWEAKS_STORAGE_KEY = 'hcb-tweaks-v1';
 function useTweaks(defaults) {
-  const [values, setValues] = React.useState(defaults);
+  const [values, setValues] = React.useState(() => {
+    try {
+      const raw = localStorage.getItem(TWEAKS_STORAGE_KEY);
+      return raw ? { ...defaults, ...JSON.parse(raw) } : defaults;
+    } catch (e) { return defaults; }
+  });
   // Accepts either setTweak('key', value) or setTweak({ key: value, ... }) so a
   // useState-style call doesn't write a "[object Object]" key into the persisted
   // JSON block.
@@ -168,6 +176,11 @@ function useTweaks(defaults) {
     const edits = typeof keyOrEdits === 'object' && keyOrEdits !== null
       ? keyOrEdits : { [keyOrEdits]: val };
     setValues((prev) => ({ ...prev, ...edits }));
+    // Store only user edits so later changes to the defaults still apply.
+    try {
+      const saved = JSON.parse(localStorage.getItem(TWEAKS_STORAGE_KEY) || '{}');
+      localStorage.setItem(TWEAKS_STORAGE_KEY, JSON.stringify({ ...saved, ...edits }));
+    } catch (e) {}
     window.parent.postMessage({ type: '__edit_mode_set_keys', edits }, '*');
     // Same-window signal so in-page listeners (deck-stage rail thumbnails)
     // can react — the parent message only reaches the host, not peers.

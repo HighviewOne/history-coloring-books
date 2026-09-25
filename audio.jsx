@@ -165,12 +165,18 @@
     return text.replace(/\s+/g, ' ').trim();
   }
 
+  // Bumped by every speak/speakLines/stop. cancel() fires onend/onerror on the
+  // interrupted utterance, so callbacks from a superseded run must bail out
+  // instead of chaining into the next line or the caller's onEnd.
+  let gen = 0;
+
   const speech = {
     speaking: false,
     speak(text, opts = {}) {
       if (muted) return;
       if (!window.speechSynthesis) return;
       window.speechSynthesis.cancel();
+      const myGen = ++gen;
       const ov = window.__voiceOverrides || { rateMul: 1, pitchMul: 1 };
       const u = new SpeechSynthesisUtterance(softenText(text));
       const baseRate  = opts.rate   != null ? opts.rate   : 0.88;
@@ -181,8 +187,8 @@
       const v = pickVoice(opts.voiceHints);
       if (v) u.voice = v;
       u.onstart = () => { speech.speaking = true; opts.onStart && opts.onStart(); };
-      u.onend   = () => { speech.speaking = false; opts.onEnd && opts.onEnd(); };
-      u.onerror = () => { speech.speaking = false; opts.onEnd && opts.onEnd(); };
+      u.onend   = () => { if (myGen !== gen) return; speech.speaking = false; opts.onEnd && opts.onEnd(); };
+      u.onerror = () => { if (myGen !== gen) return; speech.speaking = false; opts.onEnd && opts.onEnd(); };
       u.onboundary = opts.onBoundary;
       window.speechSynthesis.speak(u);
     },
@@ -190,10 +196,12 @@
     speakLines(lines, opts = {}) {
       if (muted || !window.speechSynthesis) return;
       window.speechSynthesis.cancel();
+      const myGen = ++gen;
       const v = pickVoice(opts.voiceHints);
       const ov = window.__voiceOverrides || { rateMul: 1, pitchMul: 1 };
       let i = 0;
       const speakNext = () => {
+        if (myGen !== gen) return;
         if (i >= lines.length) { speech.speaking = false; opts.onEnd && opts.onEnd(); return; }
         const u = new SpeechSynthesisUtterance(softenText(lines[i]));
         const baseRate  = opts.rate  != null ? opts.rate  : 0.86;
@@ -201,14 +209,15 @@
         u.rate  = Math.max(0.4, Math.min(1.6, baseRate  * (ov.rateMul  || 1)));
         u.pitch = Math.max(0.5, Math.min(1.6, basePitch * (ov.pitchMul || 1)));
         if (v) u.voice = v;
-        u.onstart = () => { speech.speaking = true; opts.onLine && opts.onLine(i); };
-        u.onend   = () => { i++; if (!muted) speakNext(); else { speech.speaking = false; opts.onEnd && opts.onEnd(); } };
-        u.onerror = () => { i++; speakNext(); };
+        u.onstart = () => { if (myGen !== gen) return; speech.speaking = true; opts.onLine && opts.onLine(i); };
+        u.onend   = () => { if (myGen !== gen) return; i++; if (!muted) speakNext(); else { speech.speaking = false; opts.onEnd && opts.onEnd(); } };
+        u.onerror = () => { if (myGen !== gen) return; i++; speakNext(); };
         window.speechSynthesis.speak(u);
       };
       speakNext();
     },
     stop() {
+      gen++;
       if (window.speechSynthesis) window.speechSynthesis.cancel();
       speech.speaking = false;
     },

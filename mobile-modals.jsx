@@ -59,7 +59,7 @@ function MSparkles({ count = 12 }) {
   );
 }
 
-function MobileCelebration({ page, fills, strokes, tweaks, onClose, onSpeechQuest, alreadyDone }) {
+function MobileCelebration({ page, fills, strokes, tweaks, onClose, onLibrary, onSpeechQuest, alreadyDone }) {
   const Comp = page.Component;
   const [stage, setStage] = useStateMMod(0);
   const [sheetIn, setSheetIn] = useStateMMod(false);
@@ -222,7 +222,7 @@ function MobileCelebration({ page, fills, strokes, tweaks, onClose, onSpeechQues
             boxShadow: '2px 2px 0 var(--ink)',
             fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
           }}>Keep coloring</button>
-          <button onClick={onClose} style={{
+          <button onClick={onLibrary || onClose} style={{
             padding: '10px 12px',
             background: 'var(--accent-2)', color: '#fff',
             border: '2px solid var(--ink)', borderRadius: 12,

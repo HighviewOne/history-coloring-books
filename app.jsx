@@ -196,6 +196,7 @@ function App() {
           tweaks={tweaks}
           alreadyDone={false}
           onClose={() => setScreen('color')}
+          onLibrary={goLibrary}
           onSpeechQuest={() => setScreen('quest')}
         />
       )}

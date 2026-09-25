@@ -63,7 +63,7 @@ function Sparkles({ count = 16 }) {
   );
 }
 
-function Celebration({ page, fills, strokes, tweaks, onClose, onSpeechQuest, alreadyDone }) {
+function Celebration({ page, fills, strokes, tweaks, onClose, onLibrary, onSpeechQuest, alreadyDone }) {
   const Comp = page.Component;
   const [stage, setStage] = useStateCel(0); // 0: bring alive, 1: sticker reveal
   const anim = tweaks.animation_style || 'alive';
@@ -225,7 +225,7 @@ function Celebration({ page, fills, strokes, tweaks, onClose, onSpeechQuest, alr
                 boxShadow: '3px 3px 0 var(--ink)',
                 fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14,
               }}>Keep coloring</button>
-              <button onClick={() => { onClose(); /* go back happens in app */ }} style={{
+              <button onClick={onLibrary || onClose} style={{
                 padding: '12px 14px',
                 background: 'var(--accent-2)', color: '#fff',
                 border: '2.5px solid var(--ink)', borderRadius: 14,

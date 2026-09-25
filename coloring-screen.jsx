@@ -84,7 +84,7 @@ function ColoringScreen({ page, progress, onProgress, onBack, onComplete, onShow
 
   // Tip the user when they hit certain milestones
   useEffectCol(() => {
-    if (pct === 50 && !progress?.midShown) {
+    if (pct >= 50 && pct < 100 && !progress?.midShown) {
       setShowHint(true);
       onProgress(page.id, { ...progress, midShown: true, fills });
     }
