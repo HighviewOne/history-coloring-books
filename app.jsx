@@ -79,21 +79,24 @@ function App() {
 
   const activePage = useMemoApp(() => PAGES_DATA.find(p => p.id === activeId), [activeId]);
 
-  // Tick time-on-task while a page is open in the coloring screen
+  // Track time-on-task while a page is open in the coloring screen. Committed
+  // every 30s and when leaving, not on every tick: each commit re-saves the
+  // whole progress map (brush strokes included) to localStorage.
   useEffectApp(() => {
     if (screen !== 'color' || !activeId) return;
-    const startedAt = Date.now();
-    let last = startedAt;
-    const handle = setInterval(() => {
+    let last = Date.now();
+    const commit = () => {
       const now = Date.now();
       const delta = now - last;
       last = now;
+      if (delta <= 0) return;
       setProgressMap(m => {
         const cur = m[activeId] || {};
         return { ...m, [activeId]: { ...cur, timeMs: (cur.timeMs || 0) + delta } };
       });
-    }, 4000);
-    return () => clearInterval(handle);
+    };
+    const handle = setInterval(commit, 30000);
+    return () => { clearInterval(handle); commit(); };
   }, [screen, activeId]);
 
   const handleOpen = (id) => {

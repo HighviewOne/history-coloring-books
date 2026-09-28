@@ -122,7 +122,7 @@ function MobileColoringScreen({ page, progress, onProgress, onBack, onComplete, 
   const handleClear = () => {
     if (!confirm('Erase all colors?')) return;
     setHistory([]);
-    onProgress(page.id, { ...progress, fills: {}, strokes: [], midShown: false });
+    onProgress(page.id, { ...progress, fills: {}, strokes: [], midShown: false, celebrated: false });
   };
 
   const Comp = page.Component;

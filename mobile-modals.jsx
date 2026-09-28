@@ -520,7 +520,7 @@ function MobileSpeechGame({ page, tweaks, onClose, onSolved, onQuestEvent }) {
             display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center',
             flexShrink: 0, marginBottom: 8,
           }}>
-            <span>Starts with <b>"{currentBlank.answer[0]}"</b> · <b>{currentBlank.answer.replace(/[^a-zA-Z]/g, '').length}</b> letters</span>
+            <span>Starts with <b>"{currentBlank.answer[0]}"</b> · <b>{currentBlank.answer.replace(/[^\p{L}]/gu, '').length}</b> letters</span>
             <button onClick={() => setShowHint(false)} style={{ background: 'transparent', color: 'var(--paper)', border: 'none', fontSize: 16 }}>×</button>
           </div>
         )}

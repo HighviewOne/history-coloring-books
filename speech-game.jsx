@@ -345,7 +345,7 @@ function SpeechGame({ page, tweaks, onClose, onSolved, onQuestEvent }) {
             padding: '10px 14px', background: 'var(--ink)', color: 'var(--paper)',
             borderRadius: 12, fontSize: 14, display: 'flex', justifyContent: 'space-between', gap: 14, alignItems: 'center',
           }}>
-            <span><b>Hint:</b> the word starts with <b>“{currentBlank.answer[0]}”</b> and has <b>{currentBlank.answer.replace(/[^a-zA-Z]/g, '').length}</b> letters.</span>
+            <span><b>Hint:</b> the word starts with <b>“{currentBlank.answer[0]}”</b> and has <b>{currentBlank.answer.replace(/[^\p{L}]/gu, '').length}</b> letters.</span>
             <button onClick={() => setShowHint(false)} style={{ background: 'transparent', color: 'var(--paper)', border: 'none', fontSize: 18 }}>×</button>
           </div>
         )}
