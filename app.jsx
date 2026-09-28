@@ -28,8 +28,12 @@ function App() {
     } catch (e) { return {}; }
   });
 
+  const [saveFailed, setSaveFailed] = useStateApp(false);
   useEffectApp(() => {
-    try { localStorage.setItem('hcb-progress-v1', JSON.stringify(progressMap)); } catch(e) {}
+    try {
+      localStorage.setItem('hcb-progress-v1', JSON.stringify(progressMap));
+      setSaveFailed(false);
+    } catch(e) { setSaveFailed(true); }
   }, [progressMap]);
 
   useEffectApp(() => { applyTheme(tweaks.theme); }, [tweaks.theme]);
@@ -156,6 +160,19 @@ function App() {
     }}>
       {/* "Tablet" subtle vignette */}
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', boxShadow: 'inset 0 0 80px rgba(0,0,0,0.35)', zIndex: 30 }} />
+
+      {/* Shown when localStorage rejects a save (usually quota full) */}
+      {saveFailed && (
+        <div role="alert" style={{
+          position: 'absolute', top: 12, left: 0, right: 0, margin: '0 auto', width: 'fit-content', zIndex: 200, pointerEvents: 'none',
+          maxWidth: 'min(92%, 560px)', padding: '10px 16px',
+          background: 'var(--accent)', color: '#fff',
+          border: '2.5px solid var(--ink)', borderRadius: 12, boxShadow: '3px 3px 0 var(--ink)',
+          fontSize: 14, fontWeight: 700, lineHeight: 1.4, textAlign: 'center',
+        }}>
+          Progress isn't saving — this browser's storage is full or turned off (private browsing). Clearing brush strokes on a page frees up space.
+        </div>
+      )}
 
       {/* Screen stack */}
       {screen === 'library' && (

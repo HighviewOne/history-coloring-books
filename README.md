@@ -113,8 +113,17 @@ Then open one of:
 ├── audio.jsx                         ← Speech + sound wrappers (shared)
 ├── tweaks-panel.jsx                  ← Settings panel (shared)
 │
-└── *-pages.jsx                       ← SVG coloring page definitions
+├── *-pages.jsx                       ← SVG coloring page definitions
+└── LICENSE                           ← MIT license
 ```
+
+---
+
+## License
+
+The code and original artwork are released under the [MIT License](LICENSE).
+
+Word Quest passages quote historical speeches and writings. Those texts are not covered by the MIT license, and their original rights holders keep whatever rights they have. Some, such as Dr. Martin Luther King Jr.'s "I Have a Dream" (1963), are still under copyright and are quoted in short excerpts for educational use. If you reuse or redistribute this project, check the status of any quoted text yourself.
 
 ---
 

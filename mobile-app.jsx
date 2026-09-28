@@ -27,8 +27,12 @@ function MobileApp() {
     } catch (e) { return {}; }
   });
 
+  const [saveFailed, setSaveFailed] = useStateMApp(false);
   useEffectMApp(() => {
-    try { localStorage.setItem('hcb-progress-v1', JSON.stringify(progressMap)); } catch(e) {}
+    try {
+      localStorage.setItem('hcb-progress-v1', JSON.stringify(progressMap));
+      setSaveFailed(false);
+    } catch(e) { setSaveFailed(true); }
   }, [progressMap]);
 
   useEffectMApp(() => { applyThemeMobile(tweaks.theme); }, [tweaks.theme]);
@@ -74,8 +78,25 @@ function MobileApp() {
       overflow: 'hidden',
       background: 'var(--paper)',
     }}>
+      {/* Shown when localStorage rejects a save (usually quota full) */}
+      {saveFailed && (
+        <div role="alert" style={{
+          position: 'absolute', top: 12, left: 0, right: 0, margin: '0 auto', width: 'fit-content', zIndex: 200, pointerEvents: 'none',
+          maxWidth: 'min(92%, 560px)', padding: '10px 16px',
+          background: 'var(--accent)', color: '#fff',
+          border: '2.5px solid var(--ink)', borderRadius: 12, boxShadow: '3px 3px 0 var(--ink)',
+          fontSize: 12, fontWeight: 700, lineHeight: 1.4, textAlign: 'center',
+        }}>
+          Progress isn't saving — this browser's storage is full or turned off (private browsing). Clearing brush strokes on a page frees up space.
+        </div>
+      )}
+
       {screen === 'library' && (
-        <MobileLibraryScreen progressMap={progressMap} onOpen={handleOpen} onGrownUps={() => { /* dashboard not in mobile; cycle theme as easter egg */
+        <MobileLibraryScreen progressMap={progressMap} onOpen={handleOpen}
+          // TweaksPanel opens on this message; normally the design host sends it,
+          // so post it to ourselves to make settings reachable standalone.
+          onSettings={() => window.postMessage({ type: '__activate_edit_mode' }, '*')}
+          onGrownUps={() => { /* dashboard not in mobile; cycle theme as easter egg */
           const order = ['warm-classroom', 'bright-playful', 'parchment-museum'];
           const idx = order.indexOf(tweaks.theme);
           setTweak('theme', order[(idx + 1) % order.length]);

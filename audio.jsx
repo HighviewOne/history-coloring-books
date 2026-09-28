@@ -173,8 +173,8 @@
   const speech = {
     speaking: false,
     speak(text, opts = {}) {
-      if (muted) return;
-      if (!window.speechSynthesis) return;
+      // Still report "done" when nothing will play, so callers' reading state resets.
+      if (muted || !window.speechSynthesis) { opts.onEnd && opts.onEnd(); return; }
       window.speechSynthesis.cancel();
       const myGen = ++gen;
       const ov = window.__voiceOverrides || { rateMul: 1, pitchMul: 1 };
@@ -194,7 +194,7 @@
     },
     // Speak a sequence of lines (one utterance each so we get per-line callbacks).
     speakLines(lines, opts = {}) {
-      if (muted || !window.speechSynthesis) return;
+      if (muted || !window.speechSynthesis) { opts.onEnd && opts.onEnd(); return; }
       window.speechSynthesis.cancel();
       const myGen = ++gen;
       const v = pickVoice(opts.voiceHints);

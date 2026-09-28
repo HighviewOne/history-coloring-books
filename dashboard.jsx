@@ -258,11 +258,13 @@ function SettingsBlock({ tweaks, setTweak, voiceList }) {
 // Main DashboardScreen
 // =================================================================
 function DashboardScreen({ progressMap, pages, tweaks, setTweak, voiceList, onBack, onOpen, onResetPage, onResetAll }) {
-  const [unlocked, setUnlocked] = useStateDS(() => sessionStorage.getItem('hcb-parent-unlocked') === '1');
+  const [unlocked, setUnlocked] = useStateDS(() => {
+    try { return sessionStorage.getItem('hcb-parent-unlocked') === '1'; } catch (e) { return false; }
+  });
   const [sortBy, setSortBy] = useStateDS('default'); // default | lexile | status
 
   useEffectDS(() => {
-    if (unlocked) sessionStorage.setItem('hcb-parent-unlocked', '1');
+    if (unlocked) { try { sessionStorage.setItem('hcb-parent-unlocked', '1'); } catch (e) {} }
   }, [unlocked]);
 
   // ----- KPIs -----

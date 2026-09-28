@@ -2,7 +2,7 @@
 // Brush layer — real free-form drawing on top of region fills.
 // Coordinates are in the page SVG's 0..600 viewBox space.
 // =================================================================
-const { useRef: useRefBR, useState: useStateBR } = React;
+const { useRef: useRefBR, useState: useStateBR, useId: useIdBR } = React;
 
 // Turn a list of {x,y} points into a smooth quadratic-Bezier path.
 function pointsToPath(pts) {
@@ -24,22 +24,47 @@ function pointsToPath(pts) {
 }
 
 // Render committed strokes — purely visual, no pointer events.
+// Erase strokes don't paint: each one becomes a mask over the paint strokes
+// drawn before it, so it removes brush paint without touching the page art
+// underneath. Paint strokes drawn after an erase stay visible.
 function StrokesLayer({ strokes }) {
+  // Unique per instance — the library renders many thumbnails at once.
+  const uid = useIdBR().replace(/[^a-zA-Z0-9_-]/g, '');
   if (!strokes || !strokes.length) return null;
+  const masks = [];
+  let content = [];
+  strokes.forEach(s => {
+    if (s.mode === 'erase') {
+      if (!content.length) return; // nothing underneath to erase
+      const maskId = `erase-${uid}-${s.id}`;
+      masks.push(
+        <mask key={maskId} id={maskId} maskUnits="userSpaceOnUse" x="0" y="0" width="600" height="600">
+          <rect x="0" y="0" width="600" height="600" fill="white" />
+          <path d={s.d} stroke="black" strokeWidth={s.width}
+            fill="none" strokeLinecap="round" strokeLinejoin="round" />
+        </mask>
+      );
+      content = [<g key={maskId} mask={`url(#${maskId})`}>{content}</g>];
+    } else {
+      content.push(
+        <path key={s.id} d={s.d}
+          stroke={s.color} strokeWidth={s.width}
+          fill="none" strokeLinecap="round" strokeLinejoin="round"
+          opacity={0.88}
+          style={{ mixBlendMode: 'multiply' }}
+        />
+      );
+    }
+  });
+  if (!content.length) return null;
   return (
     <svg
       viewBox="0 0 600 600" width="100%" height="100%"
       preserveAspectRatio="xMidYMid meet"
       style={{ position: 'absolute', inset: 0, pointerEvents: 'none', mixBlendMode: 'multiply' }}
     >
-      {strokes.map(s => (
-        <path key={s.id} d={s.d}
-          stroke={s.color} strokeWidth={s.width}
-          fill="none" strokeLinecap="round" strokeLinejoin="round"
-          opacity={s.mode === 'erase' ? 1 : 0.88}
-          style={{ mixBlendMode: s.mode === 'erase' ? 'normal' : 'multiply' }}
-        />
-      ))}
+      {masks.length > 0 && <defs>{masks}</defs>}
+      {content}
     </svg>
   );
 }
@@ -51,14 +76,18 @@ function BrushCanvas({ active, color, width, mode, paperColor, onCommit }) {
   const drawingRef = useRefBR(null);
   const [liveD, setLiveD] = useStateBR(null);
 
-  const strokeColor = mode === 'erase' ? paperColor : color;
+  // Erase strokes are masks (see StrokesLayer); while drawing, show a faint
+  // trail so the child can see where they're erasing.
+  const strokeColor = mode === 'erase' ? 'rgba(26,26,34,0.18)' : color;
 
   const toSvg = (clientX, clientY) => {
     const svg = svgRef.current; if (!svg) return null;
     const pt = svg.createSVGPoint(); pt.x = clientX; pt.y = clientY;
     const ctm = svg.getScreenCTM(); if (!ctm) return null;
     const p = pt.matrixTransform(ctm.inverse());
-    return { x: p.x, y: p.y };
+    // Round to 0.1 viewBox units — invisible on screen, but full-precision
+    // floats roughly triple the size of every stroke saved to localStorage.
+    return { x: Math.round(p.x * 10) / 10, y: Math.round(p.y * 10) / 10 };
   };
 
   const start = (e) => {
@@ -122,7 +151,7 @@ function BrushCanvas({ active, color, width, mode, paperColor, onCommit }) {
           stroke={strokeColor} strokeWidth={width}
           fill="none" strokeLinecap="round" strokeLinejoin="round"
           opacity={mode === 'erase' ? 1 : 0.88}
-          style={{ mixBlendMode: mode === 'erase' ? 'normal' : 'multiply' }}
+          style={{ mixBlendMode: 'multiply' }}
         />
       )}
     </svg>

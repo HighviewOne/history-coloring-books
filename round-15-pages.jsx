@@ -622,7 +622,7 @@ const ROUND_15_PAGES = [
     readingLevel: { lexile: 860, gradeBand: '4–5', guidedReading: 'P', wordCount: 36, complexity: 'Challenging' },
     keyVocab: ['armor', 'fleur-de-lis', 'siege', 'Maid of Orléans'],
     standards: ['RI.4.4', 'RI.4.1', 'L.4.4', 'SL.4.2'],
-    regions: ['sky','halo','castle-l','castle-tower-l','castle-tower-r','castle-flag','ground','horse-leg-fl','horse-leg-fr','horse-leg-bl','horse-leg-br','horse-body','horse-head','horse-mane-1','horse-mane-2','horse-ear','horse-tail','saddle-blanket','leg-armor','breastplate','fleur-de-lis','pauldron-l','pauldron-r','arm-l','hand-l','banner-cloth','arm-r','hand-r','sword-hilt','neck','face','hair','banner'],
+    regions: ['sky','halo','castle-l','castle-tower-l','castle-tower-r','castle-flag','ground','horse-leg-fl','horse-leg-fr','horse-leg-bl','horse-leg-br','hoof-fl','hoof-fr','hoof-bl','hoof-br','horse-body','horse-head','horse-mane-1','horse-mane-2','horse-ear','horse-tail','saddle-blanket','leg-armor','breastplate','fleur-de-lis','pauldron-l','pauldron-r','arm-l','hand-l','banner-cloth','arm-r','hand-r','sword-hilt','neck','face','hair','banner'],
     quest: {
       heading: 'The Maid of Orléans',
       author: 'France · 1429',

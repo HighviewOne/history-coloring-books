@@ -132,7 +132,7 @@ function MPageCard({ page, progress, onOpen }) {
   );
 }
 
-function MobileLibraryScreen({ progressMap, onOpen, onGrownUps }) {
+function MobileLibraryScreen({ progressMap, onOpen, onGrownUps, onSettings }) {
   const [coll, setColl] = useStateMLib('all');
   const filtered = useMemoMLib(() => coll === 'all' ? PAGES_DATA : PAGES_DATA.filter(p => p.collection === coll), [coll]);
   const counts = useMemoMLib(() => ({
@@ -190,6 +190,14 @@ function MobileLibraryScreen({ progressMap, onOpen, onGrownUps }) {
               History Coloring Books
             </div>
           </div>
+          <button onClick={onSettings} title="Settings" aria-label="Settings" style={{
+            width: 36, height: 36, flexShrink: 0,
+            background: 'var(--paper-2)',
+            border: '2px solid var(--ink)', borderRadius: 999,
+            boxShadow: '2px 2px 0 var(--ink)',
+            fontSize: 16, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>⚙️</button>
           <button onClick={onGrownUps} title="Parents & teachers" style={{
             width: 36, height: 36, flexShrink: 0,
             background: 'var(--paper-2)',
