@@ -27,17 +27,17 @@ History Coloring Books turns famous moments in history into interactive coloring
 
 | Feature | Description |
 |---|---|
-| 🎨 **Tap-to-Fill + Crayon Brush** | Fill named regions with color, or switch to freehand brush mode with blend-mode layering |
+| 🎨 **Tap-to-Fill + Crayon Brush** | Fill named regions with color, or switch to freehand brush mode with blend-mode layering; the brush eraser removes brush paint without touching the line art |
 | 🔊 **Read-Aloud Narration** | Web Speech API voices, tuned per historical figure (Lincoln, MLK, Cleopatra, and more) |
 | 📜 **Word Quests** | Fill-in-the-blank on famous speeches; tap-choice or drag-and-drop; line-by-line read-aloud |
 | 🏅 **Sticker Rewards** | Animated sticker reveals (waving flags, spinning suns, confetti) after completing each page |
 | 📊 **Teacher Dashboard** | KPIs, Lexile reading-level map, era coverage, per-page progress table — PIN gated |
 | 📱 **Mobile Version** | iPhone-frame preview with bottom dock, slide-up sheets, and touch-first controls |
-| 🎛️ **Tweaks Panel** | Theme, art style, animation style, sound, voice speed/pitch, age density (K–2 / Grade 3–5) |
+| 🎛️ **Settings** | Theme, animation style, sound, auto-narrate, voice speed/pitch, age density (K–2 / Grade 3–5). Desktop: in the Grown-ups dashboard. Mobile: the ⚙️ button on the library screen |
 
 ---
 
-## Content — 53+ Coloring Pages
+## Content — 62 Coloring Pages
 
 ### US History
 Mayflower 1620 · Liberty Bell 1776 · Lewis & Clark 1804 · Lincoln 1863 · Statue of Liberty 1886 · Wright Brothers 1903 · Rosie the Riveter 1942 · MLK 1963 · Apollo 11 1969 · Harriet Tubman
@@ -65,8 +65,8 @@ Mayflower 1620 · Liberty Bell 1776 · Lewis & Clark 1804 · Lincoln 1863 · Sta
 | Fonts | Google Fonts: Fraunces · Nunito · Caveat |
 | Narration | Web Speech API (voice profiles per historical figure) |
 | Sound FX | WebAudio API (crayon scribble, correct arpeggio, cheer sparkle) |
-| Drawing | SVG region-fill + canvas freehand brush (midpoint Bézier smoothing) |
-| State | localStorage key `hcb-progress-v1` — no backend, single-device |
+| Drawing | SVG region-fill + SVG freehand brush (midpoint Bézier smoothing; eraser strokes are SVG masks) |
+| State | localStorage keys `hcb-progress-v1` (progress) and `hcb-tweaks-v1` (settings) — no backend, single-device. A banner appears if the browser refuses to save |
 | Hosting | GitHub Pages (root of `main` branch) |
 
 ---
