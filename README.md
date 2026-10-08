@@ -60,8 +60,9 @@ Mayflower 1620 · Liberty Bell 1776 · Lewis & Clark 1804 · Lincoln 1863 · Sta
 
 | Layer | Technology |
 |---|---|
-| UI | React 18.3.1 + ReactDOM (UMD via unpkg — no build step) |
-| JSX | Babel Standalone 7.29.0 (transpiled in-browser at runtime) |
+| UI | React 18.3.1 + ReactDOM (production UMD via unpkg) |
+| Build | esbuild compiles the `.jsx` files into `dist/desktop.js` and `dist/mobile.js` (committed) |
+| Tests | Node's test runner + Playwright (headless Chromium), offline |
 | Fonts | Google Fonts: Fraunces · Nunito · Caveat |
 | Narration | Web Speech API (voice profiles per historical figure) |
 | Sound FX | WebAudio API (crayon scribble, correct arpeggio, cheer sparkle) |
@@ -73,7 +74,7 @@ Mayflower 1620 · Liberty Bell 1776 · Lewis & Clark 1804 · Lincoln 1863 · Sta
 
 ## Running Locally
 
-The JSX files load via relative `src=` references, so opening the HTML as a `file://` URL won't work. Serve it over HTTP:
+You can open the HTML files straight from disk, or serve the folder over HTTP:
 
 ```bash
 git clone https://github.com/HighviewOne/history-coloring-books.git
@@ -85,6 +86,19 @@ Then open one of:
 - **Landing page:** http://localhost:8080/
 - **Desktop:** http://localhost:8080/History%20Coloring%20Books.html
 - **Mobile:** http://localhost:8080/History%20Coloring%20Books%20Mobile.html
+
+## Making Changes
+
+The pages load the compiled `dist/*.js`, not the `.jsx` files. After editing any `.jsx` file:
+
+```bash
+npm install          # first time only
+npm run build        # rebuild dist/desktop.js and dist/mobile.js
+npm test             # browser tests (first time: npx playwright-core install chromium)
+```
+
+Commit the rebuilt `dist/` with your change. CI fails if `dist/` doesn't match the sources.
+New `.jsx` files must be added to the file lists in `build.mjs`, which set the load order.
 
 ---
 
@@ -109,11 +123,16 @@ Then open one of:
 ├── dashboard.jsx / dashboard-bits.jsx← Teacher dashboard
 │
 ├── pages-data.jsx                    ← Master page registry (shared)
+├── shared-hooks.jsx                  ← Progress, coloring + Word Quest logic (shared)
 ├── brush-layer.jsx                   ← Freehand drawing engine (shared)
 ├── audio.jsx                         ← Speech + sound wrappers (shared)
 ├── tweaks-panel.jsx                  ← Settings panel (shared)
 │
 ├── *-pages.jsx                       ← SVG coloring page definitions
+│
+├── build.mjs                         ← Compiles the .jsx files (npm run build)
+├── dist/                             ← Compiled app code the pages load (committed)
+├── tests/                            ← Browser tests (npm test)
 └── LICENSE                           ← MIT license
 ```
 
