@@ -5,15 +5,6 @@
 // =================================================================
 const { useState: useStateSp, useMemo: useMemoSp, useEffect: useEffectSp, useRef: useRefSp } = React;
 
-function shuffle(arr) {
-  const a = arr.slice();
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
 // Render the speech lines, weaving filled-or-blank tokens for {N}
 function SpeechBody({ quest, picks, focusIdx, onFocusBlank, wrongIdx, onDropBlank, playingLine }) {
   return (
@@ -104,62 +95,9 @@ function ChoiceChip({ word, used, onPick, big, draggable, onDragStart }) {
 }
 
 function SpeechGame({ page, tweaks, onClose, onSolved, onQuestEvent }) {
-  const quest = page.quest;
   const style = tweaks.speech_game_style || 'tap-choice';
-  const [picks, setPicks] = useStateSp({}); // bi -> word
-  const [focusIdx, setFocusIdx] = useStateSp(0);
-  const [wrongIdx, setWrongIdx] = useStateSp(null);
-  const [solved, setSolved] = useStateSp(false);
-  const [score, setScore] = useStateSp({ correct: 0, wrong: 0 });
-  const [showHint, setShowHint] = useStateSp(false);
-  const [playingLine, setPlayingLine] = useStateSp(null);
-  const [isReading, setIsReading] = useStateSp(false);
-
-  // Build a "speakable" version of each line — fill blanks with picked word
-  // or "blank" if unfilled, so the rhythm makes sense.
-  const speakableLines = useMemoSp(() => {
-    return quest.lines.map(line => line.replace(/\{(\d+)\}/g, (_, n) => {
-      const bi = parseInt(n, 10);
-      return picks[bi] || 'blank';
-    }));
-  }, [quest, picks]);
-
-  const playSpeech = () => {
-    if (!window.speech) return;
-    setIsReading(true);
-    const voice = quest.voice || {};
-    // small announcement first
-    window.speech.speak(quest.heading, {
-      rate: voice.rate || 0.9,
-      pitch: voice.pitch || 1.0,
-      voiceHints: voice.hints,
-      onEnd: () => {
-        window.speech.speakLines(speakableLines, {
-          rate: voice.rate || 0.82,
-          pitch: voice.pitch || 0.96,
-          voiceHints: voice.hints,
-          onLine: (idx) => setPlayingLine(idx),
-          onEnd: () => { setPlayingLine(null); setIsReading(false); },
-        });
-      }
-    });
-  };
-
-  const stopSpeech = () => {
-    if (window.speech) window.speech.stop();
-    setPlayingLine(null);
-    setIsReading(false);
-  };
-
-  // Auto-narrate on first open if tweak enabled
-  useEffectSp(() => {
-    if (tweaks.auto_narrate) {
-      const t = setTimeout(playSpeech, 380);
-      return () => { clearTimeout(t); stopSpeech(); };
-    }
-    return () => stopSpeech();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const w = useWordQuest({ page, tweaks, onSolved, onQuestEvent });
+  const { quest, picks, focusIdx, wrongIdx, solved, isReading, currentBlank, usedWords } = w;
 
   // For drag-drop: maintain a shared pool of word tiles
   const allChoices = useMemoSp(() => {
@@ -173,37 +111,6 @@ function SpeechGame({ page, tweaks, onClose, onSolved, onQuestEvent }) {
     return shuffle(pool.filter(p => { if (seen.has(p.word)) return false; seen.add(p.word); return true; }));
   }, [page.id, style]);
 
-  // A solved blank can't be refocused: its answer chip is already crossed
-  // out, so every tap there would count as a wrong try.
-  const focusBlank = (bi) => { if (!picks[bi]) setFocusIdx(bi); };
-
-  const handlePick = (word) => {
-    const correct = word === quest.blanks[focusIdx].answer;
-    if (correct) {
-      if (window.sfx) window.sfx.correct();
-      if (onQuestEvent) onQuestEvent(page.id, 'correct');
-      const next = { ...picks, [focusIdx]: word };
-      setPicks(next);
-      setShowHint(false);
-      setScore(s => ({ ...s, correct: s.correct + 1 }));
-      // advance to next unfilled blank
-      const nextEmpty = quest.blanks.findIndex((_, i) => !next[i]);
-      if (nextEmpty === -1) {
-        setSolved(true);
-        if (window.sfx) window.sfx.cheer();
-        setTimeout(() => onSolved && onSolved(page.id), 1100);
-      } else {
-        setFocusIdx(nextEmpty);
-      }
-    } else {
-      if (window.sfx) window.sfx.wrong();
-      if (onQuestEvent) onQuestEvent(page.id, 'wrong');
-      setWrongIdx(focusIdx);
-      setScore(s => ({ ...s, wrong: s.wrong + 1 }));
-      setTimeout(() => setWrongIdx(null), 360);
-    }
-  };
-
   // drag handlers
   const draggingRef = useRefSp(null);
   const handleDragStart = (word) => (e) => {
@@ -214,33 +121,8 @@ function SpeechGame({ page, tweaks, onClose, onSolved, onQuestEvent }) {
     e.preventDefault();
     const word = draggingRef.current || (e.dataTransfer && e.dataTransfer.getData('text/plain'));
     draggingRef.current = null;
-    if (!word || picks[bi]) return;
-    setFocusIdx(bi);
-    const correct = word === quest.blanks[bi].answer;
-    if (correct) {
-      if (window.sfx) window.sfx.correct();
-      if (onQuestEvent) onQuestEvent(page.id, 'correct');
-      const next = { ...picks, [bi]: word };
-      setPicks(next);
-      setShowHint(false);
-      setScore(s => ({ ...s, correct: s.correct + 1 }));
-      const nextEmpty = quest.blanks.findIndex((_, i) => !next[i]);
-      if (nextEmpty === -1) {
-        setSolved(true);
-        if (window.sfx) window.sfx.cheer();
-        setTimeout(() => onSolved && onSolved(page.id), 1100);
-      } else { setFocusIdx(nextEmpty); }
-    } else {
-      if (window.sfx) window.sfx.wrong();
-      if (onQuestEvent) onQuestEvent(page.id, 'wrong');
-      setWrongIdx(bi);
-      setScore(s => ({ ...s, wrong: s.wrong + 1 }));
-      setTimeout(() => setWrongIdx(null), 360);
-    }
+    w.pickWord(word, bi);
   };
-
-  const currentBlank = quest.blanks[focusIdx];
-  const usedWords = new Set(Object.values(picks));
 
   return (
     <div style={{
@@ -262,7 +144,7 @@ function SpeechGame({ page, tweaks, onClose, onSolved, onQuestEvent }) {
         overflow: 'auto',
       }} className="paper-grain">
         {/* close */}
-        <button onClick={() => { stopSpeech(); onClose(); }} style={{
+        <button onClick={() => { w.stopSpeech(); onClose(); }} style={{
           position: 'absolute', top: 14, right: 14, zIndex: 4,
           width: 36, height: 36, borderRadius: 999,
           background: 'var(--paper)', border: '2.5px solid var(--ink)',
@@ -277,7 +159,7 @@ function SpeechGame({ page, tweaks, onClose, onSolved, onQuestEvent }) {
             <h2 style={{ margin: '8px 0 2px', fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 900, lineHeight: 1.05, letterSpacing: '-0.015em' }}>{quest.heading}</h2>
             <div style={{ color: 'var(--ink-soft)', fontSize: 14, fontStyle: 'italic' }}>{quest.author}</div>
           </div>
-          <button onClick={isReading ? stopSpeech : playSpeech} style={{
+          <button onClick={isReading ? w.stopSpeech : w.playSpeech} style={{
             flexShrink: 0,
             padding: '11px 16px 11px 12px',
             background: isReading ? 'var(--ink)' : 'var(--accent)',
@@ -309,9 +191,9 @@ function SpeechGame({ page, tweaks, onClose, onSolved, onQuestEvent }) {
           <div style={{ position: 'absolute', bottom: -36, right: 14, fontFamily: 'var(--font-display)', fontSize: 80, color: 'var(--accent)', lineHeight: 1, fontWeight: 900, opacity: 0.4, pointerEvents: 'none' }}>"</div>
 
           {style === 'drag-drop' ? (
-            <SpeechBody quest={quest} picks={picks} focusIdx={focusIdx} onFocusBlank={focusBlank} wrongIdx={wrongIdx} onDropBlank={handleBlankDrop} playingLine={playingLine} />
+            <SpeechBody quest={quest} picks={picks} focusIdx={focusIdx} onFocusBlank={w.focusBlank} wrongIdx={wrongIdx} onDropBlank={handleBlankDrop} playingLine={w.playingLine} />
           ) : (
-            <SpeechBody quest={quest} picks={picks} focusIdx={focusIdx} onFocusBlank={focusBlank} wrongIdx={wrongIdx} playingLine={playingLine} />
+            <SpeechBody quest={quest} picks={picks} focusIdx={focusIdx} onFocusBlank={w.focusBlank} wrongIdx={wrongIdx} playingLine={w.playingLine} />
           )}
         </div>
 
@@ -322,7 +204,7 @@ function SpeechGame({ page, tweaks, onClose, onSolved, onQuestEvent }) {
               <div style={{ fontFamily: 'var(--font-hand)', fontSize: 22, color: 'var(--ink-soft)' }}>
                 {style === 'drag-drop' ? 'Drag a word into a blank ↓' : `Tap the right word for blank #${focusIdx + 1}`}
               </div>
-              <button onClick={() => setShowHint(true)} style={{
+              <button onClick={() => w.setShowHint(true)} style={{
                 padding: '6px 12px',
                 background: 'var(--paper-2)',
                 border: '2px solid var(--ink)',
@@ -333,11 +215,11 @@ function SpeechGame({ page, tweaks, onClose, onSolved, onQuestEvent }) {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, padding: 14, background: 'rgba(232,163,61,0.18)', border: '2.5px dashed var(--rule)', borderRadius: 16 }}
               onDragOver={(e) => e.preventDefault()}
             >
-              {(style === 'drag-drop' ? allChoices.map(c => c.word) : currentBlank.choices).map((w, i) => (
-                <ChoiceChip key={w + i} word={w} used={usedWords.has(w)}
-                  onPick={() => handlePick(w)}
+              {(style === 'drag-drop' ? allChoices.map(c => c.word) : currentBlank.choices).map((word, i) => (
+                <ChoiceChip key={word + i} word={word} used={usedWords.has(word)}
+                  onPick={() => w.pickWord(word)}
                   draggable={style === 'drag-drop'}
-                  onDragStart={style === 'drag-drop' ? handleDragStart(w) : undefined}
+                  onDragStart={style === 'drag-drop' ? handleDragStart(word) : undefined}
                   big={tweaks.age_density === 'big'}
                 />
               ))}
@@ -346,13 +228,13 @@ function SpeechGame({ page, tweaks, onClose, onSolved, onQuestEvent }) {
         )}
 
         {/* Hint pop */}
-        {showHint && !solved && (
+        {w.showHint && !solved && (
           <div style={{
             padding: '10px 14px', background: 'var(--ink)', color: 'var(--paper)',
             borderRadius: 12, fontSize: 14, display: 'flex', justifyContent: 'space-between', gap: 14, alignItems: 'center',
           }}>
-            <span><b>Hint:</b> the word starts with <b>“{currentBlank.answer[0]}”</b> and has <b>{currentBlank.answer.replace(/[^\p{L}]/gu, '').length}</b> letters.</span>
-            <button onClick={() => setShowHint(false)} style={{ background: 'transparent', color: 'var(--paper)', border: 'none', fontSize: 18 }}>×</button>
+            <span><b>Hint:</b> the word starts with <b>“{currentBlank.answer[0]}”</b> and has <b>{w.hintLetters}</b> letters.</span>
+            <button onClick={() => w.setShowHint(false)} style={{ background: 'transparent', color: 'var(--paper)', border: 'none', fontSize: 18 }}>×</button>
           </div>
         )}
 
@@ -384,11 +266,11 @@ function SpeechGame({ page, tweaks, onClose, onSolved, onQuestEvent }) {
             }}>🎉 You solved it! Junior Historian unlocked.</div>
           ) : (
             <div style={{ fontFamily: 'var(--font-hand)', fontSize: 20, color: 'var(--ink-soft)' }}>
-              try-agains: <b style={{ color: 'var(--accent)' }}>{score.wrong}</b>
+              try-agains: <b style={{ color: 'var(--accent)' }}>{w.wrongCount}</b>
             </div>
           )}
           {solved && (
-            <button onClick={() => { stopSpeech(); onClose(); }} style={{
+            <button onClick={() => { w.stopSpeech(); onClose(); }} style={{
               padding: '12px 18px',
               background: 'var(--accent)', color: '#fff',
               border: '2.5px solid var(--ink)', borderRadius: 14,
