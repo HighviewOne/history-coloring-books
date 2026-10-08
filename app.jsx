@@ -3,11 +3,6 @@
 // =================================================================
 const { useState: useStateApp, useEffect: useEffectApp, useMemo: useMemoApp } = React;
 
-function applyTheme(themeKey) {
-  const t = THEMES[themeKey] || THEMES['warm-classroom'];
-  Object.entries(t.vars).forEach(([k, v]) => document.documentElement.style.setProperty(k, v));
-}
-
 function App() {
   const [tweaks, setTweak] = useTweaks(window.__TWEAK_DEFAULTS || {
     theme: 'warm-classroom',
@@ -20,37 +15,10 @@ function App() {
 
   const [screen, setScreen] = useStateApp('library'); // 'library' | 'color' | 'celebrate' | 'quest' | 'dashboard'
   const [activeId, setActiveId] = useStateApp(null);
-  // progressMap: id -> { fills, completed, midShown, celebrated, questSolved }
-  const [progressMap, setProgressMap] = useStateApp(() => {
-    try {
-      const raw = localStorage.getItem('hcb-progress-v1');
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
-  });
-
-  const [saveFailed, setSaveFailed] = useStateApp(false);
-  useEffectApp(() => {
-    try {
-      localStorage.setItem('hcb-progress-v1', JSON.stringify(progressMap));
-      setSaveFailed(false);
-    } catch(e) { setSaveFailed(true); }
-  }, [progressMap]);
+  const [progressMap, progress, saveFailed] = useProgressStore();
 
   useEffectApp(() => { applyTheme(tweaks.theme); }, [tweaks.theme]);
-
-  // Mute / unmute audio based on Tweak
-  useEffectApp(() => {
-    if (window.setMuted) window.setMuted(!tweaks.sound_on);
-  }, [tweaks.sound_on]);
-
-  // Push voice overrides to the audio module
-  useEffectApp(() => {
-    window.__voiceOverrides = {
-      name: tweaks.voice_override || 'auto',
-      rateMul: (tweaks.voice_rate || 100) / 100,
-      pitchMul: (tweaks.voice_pitch || 100) / 100,
-    };
-  }, [tweaks.voice_override, tweaks.voice_rate, tweaks.voice_pitch]);
+  useAudioTweaks(tweaks);
 
   // Track available voices so the picker can list them.
   const [voiceList, setVoiceList] = useStateApp([]);
@@ -79,69 +47,21 @@ function App() {
 
   const activePage = useMemoApp(() => PAGES_DATA.find(p => p.id === activeId), [activeId]);
 
-  // Track time-on-task while a page is open in the coloring screen. Committed
-  // every 30s and when leaving, not on every tick: each commit re-saves the
-  // whole progress map (brush strokes included) to localStorage.
-  useEffectApp(() => {
-    if (screen !== 'color' || !activeId) return;
-    let last = Date.now();
-    const commit = () => {
-      const now = Date.now();
-      const delta = now - last;
-      last = now;
-      if (delta <= 0) return;
-      setProgressMap(m => {
-        const cur = m[activeId] || {};
-        return { ...m, [activeId]: { ...cur, timeMs: (cur.timeMs || 0) + delta } };
-      });
-    };
-    const handle = setInterval(commit, 30000);
-    return () => { clearInterval(handle); commit(); };
-  }, [screen, activeId]);
+  useTimeOnTask(screen === 'color', activeId, progress.addTime);
 
   const handleOpen = (id) => {
     setActiveId(id);
     setScreen('color');
-    // Bump opens + lastOpenedAt
-    setProgressMap(m => {
-      const cur = m[id] || {};
-      return { ...m, [id]: { ...cur, opens: (cur.opens || 0) + 1, lastOpenedAt: Date.now() } };
-    });
-  };
-
-  // Called by SpeechGame on every blank answered (correct or wrong) and on solve.
-  const recordQuestEvent = (id, type) => {
-    setProgressMap(m => {
-      const cur = m[id] || {};
-      const q = cur.quest || { correct: 0, wrong: 0, solved: false };
-      const next = { ...q };
-      if (type === 'correct') next.correct = q.correct + 1;
-      else if (type === 'wrong') next.wrong = q.wrong + 1;
-      else if (type === 'solved') next.solved = true;
-      return { ...m, [id]: { ...cur, quest: next, lastOpenedAt: Date.now() } };
-    });
+    progress.markOpened(id);
   };
 
   const resetPage = (id) => {
     if (!confirm('Erase coloring and Word Quest progress for this page?')) return;
-    setProgressMap(m => {
-      const n = { ...m };
-      delete n[id];
-      return n;
-    });
-  };
-  const resetAll = () => {
-    setProgressMap({});
-    try { localStorage.removeItem('hcb-progress-v1'); } catch(e){}
-    setScreen('library'); setActiveId(null);
-  };
-
-  const updateProgress = (id, prog) => {
-    setProgressMap(m => ({ ...m, [id]: prog }));
+    progress.resetPage(id);
   };
 
   const handleComplete = (id) => {
-    setProgressMap(m => ({ ...m, [id]: { ...(m[id]||{}), completed: true, celebrated: true } }));
+    progress.markComplete(id);
     setScreen('celebrate');
   };
 
@@ -190,9 +110,9 @@ function App() {
           setTweak={setTweak}
           voiceList={voiceList}
           onBack={goLibrary}
-          onOpen={(id) => { setActiveId(id); setScreen('color'); }}
+          onOpen={handleOpen}
           onResetPage={resetPage}
-          onResetAll={resetAll}
+          onResetAll={() => { progress.resetAll(); goLibrary(); }}
         />
       )}
 
@@ -200,7 +120,7 @@ function App() {
         <ColoringScreen
           page={activePage}
           progress={progressMap[activePage.id] || { fills: {} }}
-          onProgress={updateProgress}
+          onProgress={progress.update}
           onBack={goLibrary}
           onComplete={handleComplete}
           onShowQuest={(id) => setScreen('quest')}
@@ -226,11 +146,8 @@ function App() {
           page={activePage}
           tweaks={tweaks}
           onClose={() => setScreen('color')}
-          onSolved={(id) => {
-            setProgressMap(m => ({ ...m, [id]: { ...(m[id]||{}), questSolved: true } }));
-            recordQuestEvent(id, 'solved');
-          }}
-          onQuestEvent={recordQuestEvent}
+          onSolved={(id) => progress.recordQuestEvent(id, 'solved')}
+          onQuestEvent={progress.recordQuestEvent}
         />
       )}
 
@@ -341,8 +258,7 @@ function App() {
         <TweakSection label="Quick actions">
           <TweakButton label="Reset all progress" onClick={() => {
             if (!confirm('Erase all coloring progress and stickers?')) return;
-            setProgressMap({});
-            try { localStorage.removeItem('hcb-progress-v1'); } catch(e){}
+            progress.resetAll();
             goLibrary();
           }} />
           <TweakButton label="Auto-fill current page" secondary onClick={() => {
@@ -350,7 +266,7 @@ function App() {
             const palette = CRAYONS.filter(c => c.hex !== '#FFFFFF');
             const fills = {};
             activePage.regions.forEach((r,i) => { fills[r] = palette[i % palette.length].hex; });
-            setProgressMap(m => ({ ...m, [activePage.id]: { ...(m[activePage.id]||{}), fills } }));
+            progress.patch(activePage.id, { fills });
           }} />
         </TweakSection>
       </TweaksPanel>

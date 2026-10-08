@@ -210,7 +210,7 @@ function SettingsBlock({ tweaks, setTweak, voiceList }) {
 
   return (
     <div>
-      <Field label="Age & density" hint="Tunes button size and how much text is shown.">
+      <Field label="Age & density" hint="K–2 makes the Word Quest word buttons bigger.">
         <Pill active={tweaks.age_density === 'big'} onClick={() => setTweak('age_density', 'big')}>K–2 (big)</Pill>
         <Pill active={tweaks.age_density === 'mid'} onClick={() => setTweak('age_density', 'mid')}>Grade 3–5</Pill>
       </Field>

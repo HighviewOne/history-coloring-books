@@ -58,72 +58,8 @@ function MToolButton({ icon, label, onClick, disabled, active }) {
 }
 
 function MobileColoringScreen({ page, progress, onProgress, onBack, onComplete, onShowQuest, tweaks }) {
-  const [color, setColor] = useStateMCol(CRAYONS[0].hex);
-  const [crayonName, setCrayonName] = useStateMCol(CRAYONS[0].name);
-  const [history, setHistory] = useStateMCol([]);
-  const [showHint, setShowHint] = useStateMCol(false);
-  const [floatBurst, setFloatBurst] = useStateMCol(null);
-  const [mode, setMode] = useStateMCol('fill');
-  const [brushMode, setBrushMode] = useStateMCol('paint');
-  const [brushWidth, setBrushWidth] = useStateMCol(10);
-
-  const fills = progress?.fills || {};
-  const strokes = progress?.strokes || [];
-  const total = page.regions.length;
-  const colored = useMemoMCol(() => page.regions.filter(r => fills[r] && fills[r] !== '#FFFFFF').length, [fills, page]);
-  const pct = total ? Math.round((colored / total) * 100) : 0;
-
-  useEffectMCol(() => {
-    if (pct >= 50 && pct < 100 && !progress?.midShown) {
-      setShowHint(true);
-      onProgress(page.id, { ...progress, midShown: true, fills });
-    }
-  }, [pct]);
-
-  useEffectMCol(() => {
-    if (colored >= total && total > 0 && !progress?.celebrated) {
-      const t = setTimeout(() => onComplete(page.id), 480);
-      return () => clearTimeout(t);
-    }
-  }, [colored, total]);
-
-  const handleRegion = (id) => {
-    if (mode !== 'fill') return;
-    const prev = fills[id] || '#FFFFFF';
-    if (prev === color) return;
-    const next = { ...fills, [id]: color };
-    setHistory(h => [...h.slice(-30), { type: 'fill', region: id, prevColor: prev }]);
-    onProgress(page.id, { ...progress, fills: next });
-    if (window.sfx) { window.sfx.scribble(); setTimeout(() => window.sfx.fill(), 110); }
-    setFloatBurst({ key: Math.random(), color });
-    setTimeout(() => setFloatBurst(null), 800);
-  };
-
-  const handleStroke = (stroke) => {
-    const nextStrokes = [...strokes, stroke];
-    setHistory(h => [...h.slice(-60), { type: 'stroke', strokeId: stroke.id }]);
-    onProgress(page.id, { ...progress, fills, strokes: nextStrokes });
-  };
-
-  const handleUndo = () => {
-    if (!history.length) return;
-    const last = history[history.length - 1];
-    if (last.type === 'stroke') {
-      const nextStrokes = strokes.filter(s => s.id !== last.strokeId);
-      onProgress(page.id, { ...progress, fills, strokes: nextStrokes });
-    } else {
-      const next = { ...fills, [last.region]: last.prevColor };
-      if (last.prevColor === '#FFFFFF') delete next[last.region];
-      onProgress(page.id, { ...progress, fills: next, strokes });
-    }
-    setHistory(h => h.slice(0, -1));
-  };
-
-  const handleClear = () => {
-    if (!confirm('Erase all colors?')) return;
-    setHistory([]);
-    onProgress(page.id, { ...progress, fills: {}, strokes: [], midShown: false, celebrated: false });
-  };
+  const c = useColoring({ page, progress, onProgress, onComplete, defaultBrushWidth: 10, clearPrompt: 'Erase all colors?' });
+  const { color, mode, brushMode, brushWidth, fills, strokes, pct } = c;
 
   const Comp = page.Component;
 
@@ -216,28 +152,28 @@ function MobileColoringScreen({ page, progress, onProgress, onBack, onComplete, 
           padding: 10,
         }} className="paper-fiber">
           <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-            <Comp fills={fills} onRegion={handleRegion} alive={false} />
+            <Comp fills={fills} onRegion={c.handleRegion} alive={false} />
             <StrokesLayer strokes={strokes} />
             <BrushCanvas
               active={mode === 'brush'}
-              color={color === '#FFFFFF' ? CRAYONS[0].hex : color}
+              color={c.brushColor}
               width={brushWidth}
               mode={brushMode}
               paperColor="#FFFDF5"
-              onCommit={handleStroke}
+              onCommit={c.handleStroke}
             />
           </div>
-          {floatBurst && (
-            <div key={floatBurst.key} style={{
+          {c.floatBurst && (
+            <div key={c.floatBurst.key} style={{
               position: 'absolute', top: 12, right: 12,
               fontSize: 22, animation: 'float-up 0.8s ease-out forwards', pointerEvents: 'none',
-              color: floatBurst.color, fontWeight: 900,
+              color: c.floatBurst.color, fontWeight: 900,
             }}>✦</div>
           )}
         </div>
 
         {/* Mid-progress hint pop */}
-        {showHint && (
+        {c.showHint && (
           <div style={{
             position: 'absolute', bottom: 12, left: 12, right: 12,
             background: 'var(--ink)', color: 'var(--paper)',
@@ -250,7 +186,7 @@ function MobileColoringScreen({ page, progress, onProgress, onBack, onComplete, 
               <div style={{ fontFamily: 'var(--font-hand)', fontSize: 16, color: 'var(--accent-3)', lineHeight: 1 }}>halfway there!</div>
               <div style={{ fontSize: 12, marginTop: 4, lineHeight: 1.4 }}>{page.fact}</div>
             </div>
-            <button onClick={() => { window.speech && window.speech.stop(); setShowHint(false); }} style={{ background: 'transparent', color: 'var(--paper)', border: 'none', fontSize: 20, lineHeight: 1, padding: 0, flexShrink: 0 }}>×</button>
+            <button onClick={c.closeHint} style={{ background: 'transparent', color: 'var(--paper)', border: 'none', fontSize: 20, lineHeight: 1, padding: 0, flexShrink: 0 }}>×</button>
           </div>
         )}
       </div>
@@ -279,16 +215,16 @@ function MobileColoringScreen({ page, progress, onProgress, onBack, onComplete, 
             <div style={{
               fontFamily: 'var(--font-hand)', fontSize: 15, color: '#fff',
               textShadow: '1px 1px 0 rgba(0,0,0,0.25)',
-            }}>{crayonName}</div>
+            }}>{c.crayonName}</div>
           </div>
           <div style={{
             display: 'flex', gap: 4, overflowX: 'auto', padding: '4px 10px 6px',
             scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch',
           }}>
-            {CRAYONS.map(c => (
-              <MCrayonSwatch key={c.hex} crayon={c}
-                active={color === c.hex}
-                onClick={() => { window.sfx && window.sfx.pop(); setColor(c.hex); setCrayonName(c.name); }} />
+            {CRAYONS.map(cr => (
+              <MCrayonSwatch key={cr.hex} crayon={cr}
+                active={color === cr.hex}
+                onClick={() => c.pickCrayon(cr)} />
             ))}
           </div>
         </div>
@@ -299,8 +235,8 @@ function MobileColoringScreen({ page, progress, onProgress, onBack, onComplete, 
           overflowX: 'auto', alignItems: 'center',
           scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch',
         }}>
-          <MToolButton icon="🪣" label="Fill" active={mode === 'fill'} onClick={() => { setMode('fill'); setBrushMode('paint'); window.sfx && window.sfx.pop(); }} />
-          <MToolButton icon="✏️" label="Brush" active={mode === 'brush'} onClick={() => { setMode('brush'); setBrushMode('paint'); window.sfx && window.sfx.pop(); }} />
+          <MToolButton icon="🪣" label="Fill" active={mode === 'fill'} onClick={() => c.selectMode('fill')} />
+          <MToolButton icon="✏️" label="Brush" active={mode === 'brush'} onClick={() => c.selectMode('brush')} />
           {mode === 'brush' && (
             <div style={{
               display: 'flex', gap: 4, padding: '4px 6px',
@@ -308,7 +244,7 @@ function MobileColoringScreen({ page, progress, onProgress, onBack, onComplete, 
               borderRadius: 10, alignItems: 'center', flexShrink: 0,
             }}>
               {[{w:5,px:8},{w:10,px:12},{w:20,px:18}].map(s => (
-                <button key={s.w} onClick={() => setBrushWidth(s.w)} style={{
+                <button key={s.w} onClick={() => c.setBrushWidth(s.w)} style={{
                   width: 28, height: 28, padding: 0,
                   background: brushWidth === s.w ? 'var(--ink)' : 'var(--paper-2)',
                   border: '2px solid var(--ink)', borderRadius: 999,
@@ -320,23 +256,10 @@ function MobileColoringScreen({ page, progress, onProgress, onBack, onComplete, 
             </div>
           )}
           <div style={{ width: 1, alignSelf: 'stretch', background: 'var(--rule)', flexShrink: 0, margin: '0 2px' }} />
-          <MToolButton icon="↶" label="Undo" onClick={handleUndo} disabled={!history.length} />
-          <MToolButton icon="🧽" label="Erase" onClick={() => {
-            if (mode === 'brush') { setBrushMode(m => m === 'erase' ? 'paint' : 'erase'); }
-            else { setColor('#FFFFFF'); setCrayonName('Eraser'); }
-          }} active={brushMode === 'erase' || color === '#FFFFFF'} />
-          <MToolButton icon="🎲" label="Random" onClick={() => {
-            const palette = CRAYONS.filter(c => c.hex !== '#FFFFFF');
-            const next = { ...fills };
-            page.regions.forEach(r => {
-              if (!next[r] || next[r] === '#FFFFFF') {
-                next[r] = palette[Math.floor(Math.random() * palette.length)].hex;
-              }
-            });
-            onProgress(page.id, { ...progress, fills: next, strokes });
-            setHistory([]);
-          }} />
-          <MToolButton icon="🗑" label="Clear" onClick={handleClear} disabled={!Object.keys(fills).length && !strokes.length} />
+          <MToolButton icon="↶" label="Undo" onClick={c.handleUndo} disabled={!c.canUndo} />
+          <MToolButton icon="🧽" label="Erase" onClick={c.toggleErase} active={brushMode === 'erase' || color === '#FFFFFF'} />
+          <MToolButton icon="🎲" label="Random" onClick={c.handleRandom} />
+          <MToolButton icon="🗑" label="Clear" onClick={c.handleClear} disabled={!c.canClear} />
         </div>
       </div>
     </div>
