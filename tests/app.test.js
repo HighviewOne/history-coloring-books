@@ -121,8 +121,19 @@ for (const v of VARIANTS) {
   test(`${v.mobile ? 'mobile' : 'desktop'} (${v.style}): color, celebrate, solve the Word Quest`, async () => {
     const { ctx, page, errors } = await openApp(v.html, { speech_game_style: v.style });
     const ID = 'liberty-bell';
+    assert.equal(await page.locator('[data-region][tabindex]').count(), 0, 'library thumbnails take no keyboard focus');
     await page.evaluate(() => [...document.querySelectorAll('button')].find(b => /Liberty Bell/.test(b.innerText) && b.querySelector('svg')).click());
     await page.waitForSelector('[data-region="body"]');
+
+    // Keyboard: regions are focusable buttons; Enter fills with the current crayon
+    const region = page.locator('[data-region="body"]').first();
+    assert.equal(await region.getAttribute('tabindex'), '0');
+    assert.equal(await region.getAttribute('aria-label'), 'body');
+    await region.focus();
+    await page.keyboard.press('Enter');
+    assert.equal((await progress(page, ID)).fills.body, '#E63946', 'Enter fills a focused region');
+    assert.equal(await region.getAttribute('aria-label'), 'body, colored');
+    await clickText(page, /undo$/i);
 
     // Fill a region, then undo it
     await page.click('button[title="Sky"]');
@@ -155,7 +166,10 @@ for (const v of VARIANTS) {
     await page.waitForFunction(() => /woohoo/i.test(document.body.innerText), null, { timeout: 5000 });
     const done = await progress(page, ID);
     assert.ok(done.completed && done.celebrated, 'page marked complete');
-    await clickText(page, /Keep coloring/);
+    assert.ok(await page.evaluate(() => !!document.activeElement.closest('[role="dialog"]')), 'focus moves into the celebration');
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+    assert.ok(!/woohoo/i.test(await bodyText(page)), 'Escape closes the celebration');
     await clickText(page, /undo$/i);
     assert.deepEqual((await progress(page, ID)).fills, {}, 'undo reverts Random');
     await clickText(page, /random$/i);
@@ -176,7 +190,20 @@ for (const v of VARIANTS) {
       await page.waitForTimeout(80);
     };
     await clickText(page, /hint/i);
-    await pick(answers[0]);
+    if (v.style === 'tap-choice') {
+      // Pick the first answer from the keyboard
+      await page.evaluate((w) => [...document.querySelectorAll('div,button')].filter(e => e.children.length === 0 && e.innerText === w).pop().focus(), answers[0]);
+      await page.keyboard.press('Enter');
+      await page.waitForTimeout(80);
+      assert.equal((await progress(page, ID)).quest.correct, 1, 'Enter on a word chip answers the blank');
+    } else {
+      await pick(answers[0]);
+    }
+    if (v.mobile) {
+      await page.locator('[role="dialog"]').evaluate(d => d.parentElement.click());
+      await page.waitForTimeout(200);
+      assert.equal(await page.locator('[role="dialog"]').count(), 1, 'tapping the backdrop keeps the Word Quest open');
+    }
     assert.ok(!/starts with/i.test(await bodyText(page)), 'hint closes after a correct answer');
     if (v.style === 'tap-choice') {
       await page.evaluate((w) => [...document.querySelectorAll('button')].find(b => b.innerText === w).click(), answers[0]);
@@ -221,3 +248,18 @@ for (const v of VARIANTS) {
     await ctx.close();
   });
 }
+
+test('reduced motion: celebration confetti finishes instantly', async () => {
+  const { ctx, page, errors } = await openApp('History Coloring Books.html');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.evaluate(() => [...document.querySelectorAll('button')].find(b => /Liberty Bell/.test(b.innerText) && b.querySelector('svg')).click());
+  await page.waitForSelector('[data-region="body"]');
+  await clickText(page, /random$/i);
+  await page.waitForFunction(() => /woohoo/i.test(document.body.innerText), null, { timeout: 5000 });
+  const durations = await page.evaluate(() => [...document.querySelectorAll('[role="dialog"] ~ *, [role="dialog"] *, div')]
+    .map(el => getComputedStyle(el)).filter(cs => cs.animationName !== 'none').map(cs => parseFloat(cs.animationDuration)));
+  assert.ok(durations.length > 0, 'found animated elements');
+  assert.ok(durations.every(d => d < 0.001), 'all animations shortened: ' + [...new Set(durations)].join(','));
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});

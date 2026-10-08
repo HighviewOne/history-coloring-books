@@ -7,12 +7,25 @@
 const STROKE = '#1A1A22';
 const STROKE_W = 3.2;
 
-const reg = (fills, onRegion, id) => ({
-  'data-region': id,
-  fill: fills[id] || '#FFFFFF',
-  onClick: (e) => { e.stopPropagation(); onRegion(id); },
-  style: { cursor: 'pointer', transition: 'fill 220ms ease-out' },
-});
+// Pass onRegion={null} for display-only renders (thumbnails, celebration):
+// the regions then take no clicks and no keyboard focus.
+const reg = (fills, onRegion, id) => {
+  const fill = fills[id] || '#FFFFFF';
+  if (!onRegion) return { 'data-region': id, fill, style: { transition: 'fill 220ms ease-out' } };
+  return {
+    'data-region': id,
+    fill,
+    onClick: (e) => { e.stopPropagation(); onRegion(id); },
+    // Keyboard coloring: Tab to a region, Enter or Space fills it.
+    tabIndex: 0,
+    role: 'button',
+    'aria-label': id.replace(/[-_]+/g, ' ') + (fill !== '#FFFFFF' ? ', colored' : ''),
+    onKeyDown: (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onRegion(id); }
+    },
+    style: { cursor: 'pointer', transition: 'fill 220ms ease-out' },
+  };
+};
 
 function StarShape({ cx, cy, size = 22, id, fills, onRegion, points = 5 }) {
   const pts = [];

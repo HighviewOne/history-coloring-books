@@ -67,6 +67,7 @@ function Celebration({ page, fills, strokes, tweaks, onClose, onLibrary, onSpeec
   const Comp = page.Component;
   const [stage, setStage] = useStateCel(0); // 0: bring alive, 1: sticker reveal
   const anim = tweaks.animation_style || 'alive';
+  const dialog = useDialog(onClose);
 
   useEffectCel(() => {
     const t = setTimeout(() => setStage(1), 1700);
@@ -87,7 +88,7 @@ function Celebration({ page, fills, strokes, tweaks, onClose, onLibrary, onSpeec
     }}>
       {anim !== 'mini-scene' && <Confetti count={anim === 'confetti' ? 110 : 60} />}
 
-      <div style={{
+      <div {...dialog} aria-label="You finished the page!" style={{
         position: 'relative',
         width: 'min(94vw, 980px)',
         maxHeight: '92vh',
@@ -100,7 +101,7 @@ function Celebration({ page, fills, strokes, tweaks, onClose, onLibrary, onSpeec
         overflow: 'hidden',
       }} className="paper-grain">
         {/* close */}
-        <button onClick={onClose} style={{
+        <button onClick={onClose} aria-label="Close" style={{
           position: 'absolute', top: 14, right: 14, zIndex: 4,
           width: 36, height: 36, borderRadius: 999,
           background: 'var(--paper)', border: '2.5px solid var(--ink)',
@@ -130,7 +131,7 @@ function Celebration({ page, fills, strokes, tweaks, onClose, onLibrary, onSpeec
           }} className="paper-fiber">
             <div style={{ position: 'absolute', inset: 0, padding: 14 }}>
               <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-                <Comp fills={fills} onRegion={() => {}} alive={true} />
+                <Comp fills={fills} onRegion={null} alive={true} />
                 <StrokesLayer strokes={strokes || []} />
               </div>
             </div>

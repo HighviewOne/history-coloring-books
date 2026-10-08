@@ -64,6 +64,7 @@ function MobileCelebration({ page, fills, strokes, tweaks, onClose, onLibrary, o
   const [stage, setStage] = useStateMMod(0);
   const [sheetIn, setSheetIn] = useStateMMod(false);
   const anim = tweaks.animation_style || 'alive';
+  const dialog = useDialog(onClose);
 
   useEffectMMod(() => {
     const t1 = setTimeout(() => setSheetIn(true), 30);
@@ -84,7 +85,7 @@ function MobileCelebration({ page, fills, strokes, tweaks, onClose, onLibrary, o
     }} onClick={onClose}>
       {anim !== 'mini-scene' && <MConfetti count={anim === 'confetti' ? 90 : 50} />}
 
-      <div onClick={e => e.stopPropagation()} style={{
+      <div {...dialog} aria-label="You finished the page!" onClick={e => e.stopPropagation()} style={{
         position: 'relative',
         background: 'var(--paper)',
         borderTopLeftRadius: 24, borderTopRightRadius: 24,
@@ -105,7 +106,7 @@ function MobileCelebration({ page, fills, strokes, tweaks, onClose, onLibrary, o
         }} />
 
         {/* close button */}
-        <button onClick={onClose} style={{
+        <button onClick={onClose} aria-label="Close" style={{
           position: 'absolute', top: 14, right: 14,
           width: 32, height: 32, borderRadius: 999,
           background: 'var(--paper)', border: '2px solid var(--ink)',
@@ -138,7 +139,7 @@ function MobileCelebration({ page, fills, strokes, tweaks, onClose, onLibrary, o
         }} className="paper-fiber">
           <div style={{ position: 'absolute', inset: 0, padding: 10 }}>
             <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-              <Comp fills={fills} onRegion={() => {}} alive={true} />
+              <Comp fills={fills} onRegion={null} alive={true} />
               <StrokesLayer strokes={strokes || []} />
             </div>
           </div>
@@ -306,6 +307,7 @@ function MChoiceChip({ word, used, onPick }) {
 function MobileSpeechGame({ page, tweaks, onClose, onSolved, onQuestEvent }) {
   const w = useWordQuest({ page, tweaks, onSolved, onQuestEvent });
   const { quest, picks, focusIdx, wrongIdx, solved, isReading, currentBlank, usedWords } = w;
+  const dialog = useDialog(() => { w.stopSpeech(); onClose(); });
   const [sheetIn, setSheetIn] = useStateMMod(false);
 
   useEffectMMod(() => { const t = setTimeout(() => setSheetIn(true), 30); return () => clearTimeout(t); }, []);
@@ -316,8 +318,10 @@ function MobileSpeechGame({ page, tweaks, onClose, onSolved, onQuestEvent }) {
       background: 'rgba(20,14,8,0.65)',
       backdropFilter: 'blur(2px)',
       display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
-    }} onClick={() => { w.stopSpeech(); onClose(); }}>
-      <div onClick={e => e.stopPropagation()} style={{
+    }}>
+      {/* No close-on-backdrop-tap here: a stray tap would throw away the
+          child's Word Quest progress. Close with ✕ (or Escape). */}
+      <div {...dialog} aria-label={'Word Quest: ' + quest.heading} style={{
         position: 'relative',
         background: 'var(--paper)',
         borderTopLeftRadius: 24, borderTopRightRadius: 24,
@@ -371,7 +375,7 @@ function MobileSpeechGame({ page, tweaks, onClose, onSolved, onQuestEvent }) {
             }}>{isReading ? '⏸' : '▶'}</span>
             {isReading ? 'Stop' : 'Play'}
           </button>
-          <button onClick={() => { w.stopSpeech(); onClose(); }} style={{
+          <button onClick={() => { w.stopSpeech(); onClose(); }} aria-label="Close Word Quest" style={{
             width: 32, height: 32, borderRadius: 999,
             background: 'var(--paper)', border: '2px solid var(--ink)',
             boxShadow: '2px 2px 0 var(--ink)',
@@ -435,7 +439,7 @@ function MobileSpeechGame({ page, tweaks, onClose, onSolved, onQuestEvent }) {
             flexShrink: 0, marginBottom: 8,
           }}>
             <span>Starts with <b>"{currentBlank.answer[0]}"</b> · <b>{w.hintLetters}</b> letters</span>
-            <button onClick={() => w.setShowHint(false)} style={{ background: 'transparent', color: 'var(--paper)', border: 'none', fontSize: 16 }}>×</button>
+            <button onClick={() => w.setShowHint(false)} aria-label="Close hint" style={{ background: 'transparent', color: 'var(--paper)', border: 'none', fontSize: 16 }}>×</button>
           </div>
         )}
 

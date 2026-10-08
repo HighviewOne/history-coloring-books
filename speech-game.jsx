@@ -73,6 +73,12 @@ function ChoiceChip({ word, used, onPick, big, draggable, onDragStart }) {
   return (
     <div
       onClick={used ? undefined : onPick}
+      // A div (not a button) so it can be dragged in every browser; these
+      // make it work like a button from the keyboard too.
+      role="button"
+      tabIndex={used ? -1 : 0}
+      aria-disabled={used || undefined}
+      onKeyDown={used ? undefined : (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onPick(); } }}
       draggable={draggable && !used}
       onDragStart={onDragStart}
       style={{
@@ -98,6 +104,7 @@ function SpeechGame({ page, tweaks, onClose, onSolved, onQuestEvent }) {
   const style = tweaks.speech_game_style || 'tap-choice';
   const w = useWordQuest({ page, tweaks, onSolved, onQuestEvent });
   const { quest, picks, focusIdx, wrongIdx, solved, isReading, currentBlank, usedWords } = w;
+  const dialog = useDialog(() => { w.stopSpeech(); onClose(); });
 
   // For drag-drop: maintain a shared pool of word tiles
   const allChoices = useMemoSp(() => {
@@ -131,7 +138,7 @@ function SpeechGame({ page, tweaks, onClose, onSolved, onQuestEvent }) {
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       backdropFilter: 'blur(2px)',
     }}>
-      <div style={{
+      <div {...dialog} aria-label={'Word Quest: ' + quest.heading} style={{
         position: 'relative',
         width: 'min(94vw, 920px)',
         maxHeight: '92vh',
@@ -144,7 +151,7 @@ function SpeechGame({ page, tweaks, onClose, onSolved, onQuestEvent }) {
         overflow: 'auto',
       }} className="paper-grain">
         {/* close */}
-        <button onClick={() => { w.stopSpeech(); onClose(); }} style={{
+        <button onClick={() => { w.stopSpeech(); onClose(); }} aria-label="Close Word Quest" style={{
           position: 'absolute', top: 14, right: 14, zIndex: 4,
           width: 36, height: 36, borderRadius: 999,
           background: 'var(--paper)', border: '2.5px solid var(--ink)',
@@ -234,7 +241,7 @@ function SpeechGame({ page, tweaks, onClose, onSolved, onQuestEvent }) {
             borderRadius: 12, fontSize: 14, display: 'flex', justifyContent: 'space-between', gap: 14, alignItems: 'center',
           }}>
             <span><b>Hint:</b> the word starts with <b>“{currentBlank.answer[0]}”</b> and has <b>{w.hintLetters}</b> letters.</span>
-            <button onClick={() => w.setShowHint(false)} style={{ background: 'transparent', color: 'var(--paper)', border: 'none', fontSize: 18 }}>×</button>
+            <button onClick={() => w.setShowHint(false)} aria-label="Close hint" style={{ background: 'transparent', color: 'var(--paper)', border: 'none', fontSize: 18 }}>×</button>
           </div>
         )}
 

@@ -79,7 +79,7 @@ function MobileColoringScreen({ page, progress, onProgress, onBack, onComplete, 
         background: 'var(--paper-2)',
         borderBottom: '2px solid var(--ink)',
       }}>
-        <button onClick={onBack} style={{
+        <button onClick={onBack} aria-label="Back to library" style={{
           width: 36, height: 36, flexShrink: 0,
           background: 'var(--paper)',
           border: '2px solid var(--ink)', borderRadius: 999,
@@ -119,7 +119,7 @@ function MobileColoringScreen({ page, progress, onProgress, onBack, onComplete, 
             color: 'var(--ink)',
           }}>{pct}%</div>
         </div>
-        <button onClick={() => onShowQuest(page.id)} title="Word Quest" style={{
+        <button onClick={() => onShowQuest(page.id)} title="Word Quest" aria-label="Word Quest" style={{
           width: 42, height: 42, flexShrink: 0,
           background: 'var(--accent-2)', color: '#fff',
           border: '2px solid var(--ink)', borderRadius: 12,
@@ -186,7 +186,7 @@ function MobileColoringScreen({ page, progress, onProgress, onBack, onComplete, 
               <div style={{ fontFamily: 'var(--font-hand)', fontSize: 16, color: 'var(--accent-3)', lineHeight: 1 }}>halfway there!</div>
               <div style={{ fontSize: 12, marginTop: 4, lineHeight: 1.4 }}>{page.fact}</div>
             </div>
-            <button onClick={c.closeHint} style={{ background: 'transparent', color: 'var(--paper)', border: 'none', fontSize: 20, lineHeight: 1, padding: 0, flexShrink: 0 }}>×</button>
+            <button onClick={c.closeHint} aria-label="Close tip" style={{ background: 'transparent', color: 'var(--paper)', border: 'none', fontSize: 20, lineHeight: 1, padding: 0, flexShrink: 0 }}>×</button>
           </div>
         )}
       </div>
