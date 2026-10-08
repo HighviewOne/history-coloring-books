@@ -288,7 +288,11 @@ function MobileColoringScreen({ page, progress, onProgress, onBack, onComplete, 
             {CRAYONS.map(c => (
               <MCrayonSwatch key={c.hex} crayon={c}
                 active={color === c.hex}
-                onClick={() => { window.sfx && window.sfx.pop(); setColor(c.hex); setCrayonName(c.name); }} />
+                onClick={() => {
+                  window.sfx && window.sfx.pop(); setColor(c.hex); setCrayonName(c.name);
+                  // In brush mode the eraser crayon erases; any other crayon paints.
+                  setBrushMode(c.hex === '#FFFFFF' ? 'erase' : 'paint');
+                }} />
             ))}
           </div>
         </div>
@@ -300,7 +304,7 @@ function MobileColoringScreen({ page, progress, onProgress, onBack, onComplete, 
           scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch',
         }}>
           <MToolButton icon="🪣" label="Fill" active={mode === 'fill'} onClick={() => { setMode('fill'); setBrushMode('paint'); window.sfx && window.sfx.pop(); }} />
-          <MToolButton icon="✏️" label="Brush" active={mode === 'brush'} onClick={() => { setMode('brush'); setBrushMode('paint'); window.sfx && window.sfx.pop(); }} />
+          <MToolButton icon="✏️" label="Brush" active={mode === 'brush'} onClick={() => { setMode('brush'); setBrushMode(color === '#FFFFFF' ? 'erase' : 'paint'); window.sfx && window.sfx.pop(); }} />
           {mode === 'brush' && (
             <div style={{
               display: 'flex', gap: 4, padding: '4px 6px',
@@ -322,7 +326,16 @@ function MobileColoringScreen({ page, progress, onProgress, onBack, onComplete, 
           <div style={{ width: 1, alignSelf: 'stretch', background: 'var(--rule)', flexShrink: 0, margin: '0 2px' }} />
           <MToolButton icon="↶" label="Undo" onClick={handleUndo} disabled={!history.length} />
           <MToolButton icon="🧽" label="Erase" onClick={() => {
-            if (mode === 'brush') { setBrushMode(m => m === 'erase' ? 'paint' : 'erase'); }
+            if (mode === 'brush') {
+              if (brushMode === 'erase') {
+                setBrushMode('paint');
+                // Leaving erase with the eraser crayon picked: switch to a real crayon
+                // so the crayon strip matches what the brush paints.
+                if (color === '#FFFFFF') { setColor(CRAYONS[0].hex); setCrayonName(CRAYONS[0].name); }
+              } else {
+                setBrushMode('erase');
+              }
+            }
             else { setColor('#FFFFFF'); setCrayonName('Eraser'); }
           }} active={brushMode === 'erase' || color === '#FFFFFF'} />
           <MToolButton icon="🎲" label="Random" onClick={() => {

@@ -143,8 +143,6 @@ function ColoringScreen({ page, progress, onProgress, onBack, onComplete, onShow
   };
 
   const Comp = page.Component;
-  const dense = tweaks.age_density === 'dense'; // teen
-  const big = tweaks.age_density === 'big';     // K-2
 
   return (
     <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--paper)' }} className="paper-grain">
@@ -238,7 +236,7 @@ function ColoringScreen({ page, progress, onProgress, onBack, onComplete, onShow
             ].map(t => {
               const active = mode === t.id;
               return (
-                <button key={t.id} onClick={() => { setMode(t.id); setBrushMode('paint'); if (window.sfx) window.sfx.pop(); }} style={{
+                <button key={t.id} onClick={() => { setMode(t.id); setBrushMode(color === '#FFFFFF' ? 'erase' : 'paint'); if (window.sfx) window.sfx.pop(); }} style={{
                   display: 'flex', alignItems: 'center', gap: 4,
                   padding: '6px 4px',
                   background: active ? 'var(--ink)' : 'transparent',
@@ -285,7 +283,14 @@ function ColoringScreen({ page, progress, onProgress, onBack, onComplete, onShow
           <ToolButton icon="↶" label="Undo" onClick={handleUndo} disabled={!history.length} />
           <ToolButton icon="🧽" label={mode === 'brush' ? (brushMode === 'erase' ? 'Erasing' : 'Erase') : 'Erase'} onClick={() => {
             if (mode === 'brush') {
-              setBrushMode(m => m === 'erase' ? 'paint' : 'erase');
+              if (brushMode === 'erase') {
+                setBrushMode('paint');
+                // Leaving erase with the eraser crayon picked: switch to a real crayon
+                // so the swatch box matches what the brush paints.
+                if (color === '#FFFFFF') { setColor(CRAYONS[0].hex); setCrayonName(CRAYONS[0].name); }
+              } else {
+                setBrushMode('erase');
+              }
             } else {
               setColor('#FFFFFF'); setCrayonName('Eraser');
             }
@@ -397,7 +402,11 @@ function ColoringScreen({ page, progress, onProgress, onBack, onComplete, onShow
             justifyItems: 'center',
           }}>
             {CRAYONS.map(c => (
-              <CrayonSwatch key={c.hex} crayon={c} active={color === c.hex} onClick={() => { window.sfx && window.sfx.pop(); setColor(c.hex); setCrayonName(c.name); }} />
+              <CrayonSwatch key={c.hex} crayon={c} active={color === c.hex} onClick={() => {
+                window.sfx && window.sfx.pop(); setColor(c.hex); setCrayonName(c.name);
+                // In brush mode the eraser crayon erases; any other crayon paints.
+                setBrushMode(c.hex === '#FFFFFF' ? 'erase' : 'paint');
+              }} />
             ))}
           </div>
         </div>

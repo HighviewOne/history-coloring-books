@@ -198,14 +198,14 @@ function MobileLibraryScreen({ progressMap, onOpen, onGrownUps, onSettings }) {
             fontSize: 16, cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>⚙️</button>
-          <button onClick={onGrownUps} title="Parents & teachers" style={{
+          <button onClick={onGrownUps} title="Change theme" aria-label="Change theme" style={{
             width: 36, height: 36, flexShrink: 0,
             background: 'var(--paper-2)',
             border: '2px solid var(--ink)', borderRadius: 999,
             boxShadow: '2px 2px 0 var(--ink)',
             fontSize: 14, cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>🔒</button>
+          }}>🎨</button>
         </div>
       </div>
 

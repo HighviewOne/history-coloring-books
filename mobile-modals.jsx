@@ -375,6 +375,7 @@ function MobileSpeechGame({ page, tweaks, onClose, onSolved, onQuestEvent }) {
       if (onQuestEvent) onQuestEvent(page.id, 'correct');
       const next = { ...picks, [focusIdx]: word };
       setPicks(next);
+      setShowHint(false);
       setScore(s => ({ ...s, correct: s.correct + 1 }));
       const nextEmpty = quest.blanks.findIndex((_, i) => !next[i]);
       if (nextEmpty === -1) {
@@ -481,7 +482,7 @@ function MobileSpeechGame({ page, tweaks, onClose, onSolved, onQuestEvent }) {
               lineHeight: 1, fontWeight: 900, opacity: 0.35, pointerEvents: 'none',
             }}>"</div>
             <MSpeechBody quest={quest} picks={picks} focusIdx={focusIdx}
-              onFocusBlank={(bi) => setFocusIdx(bi)}
+              onFocusBlank={(bi) => { if (!picks[bi]) setFocusIdx(bi); }}
               wrongIdx={wrongIdx} playingLine={playingLine} />
           </div>
         </div>

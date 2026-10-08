@@ -96,7 +96,7 @@ function MobileApp() {
           // TweaksPanel opens on this message; normally the design host sends it,
           // so post it to ourselves to make settings reachable standalone.
           onSettings={() => window.postMessage({ type: '__activate_edit_mode' }, '*')}
-          onGrownUps={() => { /* dashboard not in mobile; cycle theme as easter egg */
+          onGrownUps={() => { /* no dashboard on mobile yet; this button cycles the theme */
           const order = ['warm-classroom', 'bright-playful', 'parchment-museum'];
           const idx = order.indexOf(tweaks.theme);
           setTweak('theme', order[(idx + 1) % order.length]);

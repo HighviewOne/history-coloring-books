@@ -82,10 +82,13 @@ function App() {
   // Track time-on-task while a page is open in the coloring screen. Committed
   // every 30s and when leaving, not on every tick: each commit re-saves the
   // whole progress map (brush strokes included) to localStorage.
+  // Time while the tab is hidden (another tab, laptop closed) is not counted,
+  // and hiding the tab commits right away, so closing it rarely loses time.
   useEffectApp(() => {
     if (screen !== 'color' || !activeId) return;
-    let last = Date.now();
+    let last = document.hidden ? null : Date.now();
     const commit = () => {
+      if (last === null) return;
       const now = Date.now();
       const delta = now - last;
       last = now;
@@ -95,8 +98,17 @@ function App() {
         return { ...m, [activeId]: { ...cur, timeMs: (cur.timeMs || 0) + delta } };
       });
     };
+    const onVisibility = () => {
+      if (document.hidden) { commit(); last = null; }
+      else last = Date.now();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
     const handle = setInterval(commit, 30000);
-    return () => { clearInterval(handle); commit(); };
+    return () => {
+      clearInterval(handle);
+      document.removeEventListener('visibilitychange', onVisibility);
+      commit();
+    };
   }, [screen, activeId]);
 
   const handleOpen = (id) => {
@@ -190,7 +202,7 @@ function App() {
           setTweak={setTweak}
           voiceList={voiceList}
           onBack={goLibrary}
-          onOpen={(id) => { setActiveId(id); setScreen('color'); }}
+          onOpen={handleOpen}
           onResetPage={resetPage}
           onResetAll={resetAll}
         />

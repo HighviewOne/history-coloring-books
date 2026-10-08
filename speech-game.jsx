@@ -173,6 +173,10 @@ function SpeechGame({ page, tweaks, onClose, onSolved, onQuestEvent }) {
     return shuffle(pool.filter(p => { if (seen.has(p.word)) return false; seen.add(p.word); return true; }));
   }, [page.id, style]);
 
+  // A solved blank can't be refocused: its answer chip is already crossed
+  // out, so every tap there would count as a wrong try.
+  const focusBlank = (bi) => { if (!picks[bi]) setFocusIdx(bi); };
+
   const handlePick = (word) => {
     const correct = word === quest.blanks[focusIdx].answer;
     if (correct) {
@@ -180,6 +184,7 @@ function SpeechGame({ page, tweaks, onClose, onSolved, onQuestEvent }) {
       if (onQuestEvent) onQuestEvent(page.id, 'correct');
       const next = { ...picks, [focusIdx]: word };
       setPicks(next);
+      setShowHint(false);
       setScore(s => ({ ...s, correct: s.correct + 1 }));
       // advance to next unfilled blank
       const nextEmpty = quest.blanks.findIndex((_, i) => !next[i]);
@@ -208,7 +213,8 @@ function SpeechGame({ page, tweaks, onClose, onSolved, onQuestEvent }) {
   const handleBlankDrop = (bi) => (e) => {
     e.preventDefault();
     const word = draggingRef.current || (e.dataTransfer && e.dataTransfer.getData('text/plain'));
-    if (!word) return;
+    draggingRef.current = null;
+    if (!word || picks[bi]) return;
     setFocusIdx(bi);
     const correct = word === quest.blanks[bi].answer;
     if (correct) {
@@ -216,6 +222,7 @@ function SpeechGame({ page, tweaks, onClose, onSolved, onQuestEvent }) {
       if (onQuestEvent) onQuestEvent(page.id, 'correct');
       const next = { ...picks, [bi]: word };
       setPicks(next);
+      setShowHint(false);
       setScore(s => ({ ...s, correct: s.correct + 1 }));
       const nextEmpty = quest.blanks.findIndex((_, i) => !next[i]);
       if (nextEmpty === -1) {
@@ -230,7 +237,6 @@ function SpeechGame({ page, tweaks, onClose, onSolved, onQuestEvent }) {
       setScore(s => ({ ...s, wrong: s.wrong + 1 }));
       setTimeout(() => setWrongIdx(null), 360);
     }
-    draggingRef.current = null;
   };
 
   const currentBlank = quest.blanks[focusIdx];
@@ -303,9 +309,9 @@ function SpeechGame({ page, tweaks, onClose, onSolved, onQuestEvent }) {
           <div style={{ position: 'absolute', bottom: -36, right: 14, fontFamily: 'var(--font-display)', fontSize: 80, color: 'var(--accent)', lineHeight: 1, fontWeight: 900, opacity: 0.4, pointerEvents: 'none' }}>"</div>
 
           {style === 'drag-drop' ? (
-            <SpeechBody quest={quest} picks={picks} focusIdx={focusIdx} onFocusBlank={(bi) => setFocusIdx(bi)} wrongIdx={wrongIdx} onDropBlank={handleBlankDrop} playingLine={playingLine} />
+            <SpeechBody quest={quest} picks={picks} focusIdx={focusIdx} onFocusBlank={focusBlank} wrongIdx={wrongIdx} onDropBlank={handleBlankDrop} playingLine={playingLine} />
           ) : (
-            <SpeechBody quest={quest} picks={picks} focusIdx={focusIdx} onFocusBlank={(bi) => setFocusIdx(bi)} wrongIdx={wrongIdx} playingLine={playingLine} />
+            <SpeechBody quest={quest} picks={picks} focusIdx={focusIdx} onFocusBlank={focusBlank} wrongIdx={wrongIdx} playingLine={playingLine} />
           )}
         </div>
 
