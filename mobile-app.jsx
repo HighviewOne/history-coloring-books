@@ -43,10 +43,11 @@ function MobileApp() {
       overflow: 'hidden',
       background: 'var(--paper)',
     }}>
-      {/* Shown when localStorage rejects a save (usually quota full) */}
+      {/* Shown when localStorage rejects a save (usually quota full). Sits just
+          under the header bars so it doesn't hide their buttons. */}
       {saveFailed && (
         <div role="alert" style={{
-          position: 'absolute', top: 12, left: 0, right: 0, margin: '0 auto', width: 'fit-content', zIndex: 200, pointerEvents: 'none',
+          position: 'absolute', top: 64, left: 0, right: 0, margin: '0 auto', width: 'fit-content', zIndex: 200, pointerEvents: 'none',
           maxWidth: 'min(92%, 560px)', padding: '10px 16px',
           background: 'var(--accent)', color: '#fff',
           border: '2.5px solid var(--ink)', borderRadius: 12, boxShadow: '3px 3px 0 var(--ink)',
