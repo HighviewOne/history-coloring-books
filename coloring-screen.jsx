@@ -68,83 +68,9 @@ function ToolButton({ icon, label, onClick, disabled, color }) {
 }
 
 function ColoringScreen({ page, progress, onProgress, onBack, onComplete, onShowQuest, tweaks }) {
-  const [color, setColor] = useStateCol(CRAYONS[0].hex);
-  const [crayonName, setCrayonName] = useStateCol(CRAYONS[0].name);
-  const [history, setHistory] = useStateCol([]); // [{type:'fill'|'stroke', ...}]
-  const [showHint, setShowHint] = useStateCol(false);
-  const [floatBurst, setFloatBurst] = useStateCol(null); // {x,y,color}
-  const [mode, setMode] = useStateCol('fill'); // 'fill' | 'brush'
-  const [brushMode, setBrushMode] = useStateCol('paint'); // 'paint' | 'erase'
-  const [brushWidth, setBrushWidth] = useStateCol(12);
-  const fills = progress?.fills || {};
-  const strokes = progress?.strokes || [];
-  const total = page.regions.length;
-  const colored = useMemoCol(() => page.regions.filter(r => fills[r] && fills[r] !== '#FFFFFF').length, [fills, page]);
-  const pct = total ? Math.round((colored / total) * 100) : 0;
-
-  // Tip the user when they hit certain milestones
-  useEffectCol(() => {
-    if (pct >= 50 && pct < 100 && !progress?.midShown) {
-      setShowHint(true);
-      onProgress(page.id, { ...progress, midShown: true, fills });
-    }
-  }, [pct]);
-
-  // Auto-prompt for celebration when 100%
-  useEffectCol(() => {
-    if (colored >= total && total > 0 && !progress?.celebrated) {
-      // small delay to let last fill render
-      const t = setTimeout(() => onComplete(page.id), 480);
-      return () => clearTimeout(t);
-    }
-  }, [colored, total]);
-
-  const handleRegion = (id) => {
-    if (mode !== 'fill') return; // brush mode owns the canvas
-    const prev = fills[id] || '#FFFFFF';
-    if (prev === color) return; // no-op
-    const next = { ...fills, [id]: color };
-    setHistory(h => [...h.slice(-30), { type: 'fill', region: id, prevColor: prev }]);
-    onProgress(page.id, { ...progress, fills: next });
-    // crayon scribble sound + small fill tick
-    if (window.sfx) {
-      window.sfx.scribble();
-      setTimeout(() => window.sfx.fill(), 110);
-    }
-    // floaty crayon dot
-    setFloatBurst({ key: Math.random(), color });
-    setTimeout(() => setFloatBurst(null), 800);
-  };
-
-  const handleStroke = (stroke) => {
-    const nextStrokes = [...strokes, stroke];
-    setHistory(h => [...h.slice(-60), { type: 'stroke', strokeId: stroke.id }]);
-    onProgress(page.id, { ...progress, fills, strokes: nextStrokes });
-  };
-
-  const handleUndo = () => {
-    if (!history.length) return;
-    const last = history[history.length - 1];
-    if (last.type === 'stroke') {
-      const nextStrokes = strokes.filter(s => s.id !== last.strokeId);
-      onProgress(page.id, { ...progress, fills, strokes: nextStrokes });
-    } else {
-      const next = { ...fills, [last.region]: last.prevColor };
-      if (last.prevColor === '#FFFFFF') delete next[last.region];
-      onProgress(page.id, { ...progress, fills: next, strokes });
-    }
-    setHistory(h => h.slice(0, -1));
-  };
-
-  const handleClear = () => {
-    if (!confirm('Erase all colors and brush strokes?')) return;
-    setHistory([]);
-    onProgress(page.id, { ...progress, fills: {}, strokes: [], midShown: false, celebrated: false });
-  };
-
+  const c = useColoring({ page, progress, onProgress, onComplete, defaultBrushWidth: 12 });
+  const { color, mode, brushMode, brushWidth, fills, strokes, pct } = c;
   const Comp = page.Component;
-  const dense = tweaks.age_density === 'dense'; // teen
-  const big = tweaks.age_density === 'big';     // K-2
 
   return (
     <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--paper)' }} className="paper-grain">
@@ -238,7 +164,7 @@ function ColoringScreen({ page, progress, onProgress, onBack, onComplete, onShow
             ].map(t => {
               const active = mode === t.id;
               return (
-                <button key={t.id} onClick={() => { setMode(t.id); setBrushMode('paint'); if (window.sfx) window.sfx.pop(); }} style={{
+                <button key={t.id} onClick={() => c.selectMode(t.id)} style={{
                   display: 'flex', alignItems: 'center', gap: 4,
                   padding: '6px 4px',
                   background: active ? 'var(--ink)' : 'transparent',
@@ -268,7 +194,7 @@ function ColoringScreen({ page, progress, onProgress, onBack, onComplete, onShow
                 {[{ w: 5, px: 8 }, { w: 12, px: 14 }, { w: 24, px: 22 }].map(s => {
                   const active = brushWidth === s.w;
                   return (
-                    <button key={s.w} onClick={() => setBrushWidth(s.w)} style={{
+                    <button key={s.w} onClick={() => c.setBrushWidth(s.w)} style={{
                       width: 34, height: 34, padding: 0,
                       background: active ? 'var(--ink)' : 'var(--paper-2)',
                       border: '2px solid var(--ink)', borderRadius: 999,
@@ -282,27 +208,10 @@ function ColoringScreen({ page, progress, onProgress, onBack, onComplete, onShow
             </div>
           )}
 
-          <ToolButton icon="↶" label="Undo" onClick={handleUndo} disabled={!history.length} />
-          <ToolButton icon="🧽" label={mode === 'brush' ? (brushMode === 'erase' ? 'Erasing' : 'Erase') : 'Erase'} onClick={() => {
-            if (mode === 'brush') {
-              setBrushMode(m => m === 'erase' ? 'paint' : 'erase');
-            } else {
-              setColor('#FFFFFF'); setCrayonName('Eraser');
-            }
-          }} />
-          <ToolButton icon="🎲" label="Random" onClick={() => {
-            // fill all empty regions with random crayons
-            const palette = CRAYONS.filter(c => c.hex !== '#FFFFFF');
-            const next = { ...fills };
-            page.regions.forEach(r => {
-              if (!next[r] || next[r] === '#FFFFFF') {
-                next[r] = palette[Math.floor(Math.random() * palette.length)].hex;
-              }
-            });
-            onProgress(page.id, { ...progress, fills: next, strokes });
-            setHistory([]);
-          }} />
-          <ToolButton icon="🗑" label="Clear" onClick={handleClear} disabled={!Object.keys(fills).length && !strokes.length} />
+          <ToolButton icon="↶" label="Undo" onClick={c.handleUndo} disabled={!c.canUndo} />
+          <ToolButton icon="🧽" label={mode === 'brush' ? (brushMode === 'erase' ? 'Erasing' : 'Erase') : 'Erase'} onClick={c.toggleErase} />
+          <ToolButton icon="🎲" label="Random" onClick={c.handleRandom} />
+          <ToolButton icon="🗑" label="Clear" onClick={c.handleClear} disabled={!c.canClear} />
           <div style={{ flex: 1 }} />
           <div style={{
             padding: '8px 6px', textAlign: 'center',
@@ -329,29 +238,29 @@ function ColoringScreen({ page, progress, onProgress, onBack, onComplete, onShow
             padding: 18,
           }} className="paper-fiber">
             <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-              <Comp fills={fills} onRegion={handleRegion} alive={false} />
+              <Comp fills={fills} onRegion={c.handleRegion} alive={false} />
               <StrokesLayer strokes={strokes} />
               <BrushCanvas
                 active={mode === 'brush'}
-                color={color === '#FFFFFF' ? CRAYONS[0].hex : color}
+                color={c.brushColor}
                 width={brushWidth}
                 mode={brushMode}
                 paperColor="#FFFDF5"
-                onCommit={handleStroke}
+                onCommit={c.handleStroke}
               />
             </div>
             {/* floating crayon dot when you fill */}
-            {floatBurst && (
-              <div key={floatBurst.key} style={{
+            {c.floatBurst && (
+              <div key={c.floatBurst.key} style={{
                 position: 'absolute', top: 20, right: 20,
                 fontSize: 28, animation: 'float-up 0.8s ease-out forwards', pointerEvents: 'none',
-                color: floatBurst.color, fontWeight: 900,
+                color: c.floatBurst.color, fontWeight: 900,
               }}>✦</div>
             )}
           </div>
 
           {/* Mid-progress hint pop-up */}
-          {showHint && (
+          {c.showHint && (
             <div style={{
               position: 'absolute', bottom: 24, right: 24,
               maxWidth: 340,
@@ -373,7 +282,7 @@ function ColoringScreen({ page, progress, onProgress, onBack, onComplete, onShow
                     display: 'inline-flex', alignItems: 'center', gap: 6,
                   }}>🔊 Read it to me</button>
                 </div>
-                <button onClick={() => { window.speech && window.speech.stop(); setShowHint(false); }} style={{ background: 'transparent', color: 'var(--paper)', border: 'none', fontSize: 22, lineHeight: 1, padding: 0 }}>×</button>
+                <button onClick={c.closeHint} style={{ background: 'transparent', color: 'var(--paper)', border: 'none', fontSize: 22, lineHeight: 1, padding: 0 }}>×</button>
               </div>
             </div>
           )}
@@ -388,7 +297,7 @@ function ColoringScreen({ page, progress, onProgress, onBack, onComplete, onShow
           overflowY: 'auto',
         }}>
           <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 14, color: 'var(--ink-soft)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Crayon Box</div>
-          <div style={{ fontFamily: 'var(--font-hand)', fontSize: 18, color: 'var(--ink)', marginBottom: 6 }}>{crayonName}</div>
+          <div style={{ fontFamily: 'var(--font-hand)', fontSize: 18, color: 'var(--ink)', marginBottom: 6 }}>{c.crayonName}</div>
           <div style={{
             display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 4,
             padding: '12px 8px',
@@ -396,8 +305,8 @@ function ColoringScreen({ page, progress, onProgress, onBack, onComplete, onShow
             border: '2.5px solid var(--ink)', boxShadow: 'inset 0 -4px 0 rgba(0,0,0,0.25)',
             justifyItems: 'center',
           }}>
-            {CRAYONS.map(c => (
-              <CrayonSwatch key={c.hex} crayon={c} active={color === c.hex} onClick={() => { window.sfx && window.sfx.pop(); setColor(c.hex); setCrayonName(c.name); }} />
+            {CRAYONS.map(cr => (
+              <CrayonSwatch key={cr.hex} crayon={cr} active={color === cr.hex} onClick={() => c.pickCrayon(cr)} />
             ))}
           </div>
         </div>

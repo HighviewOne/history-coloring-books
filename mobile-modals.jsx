@@ -191,20 +191,7 @@ function MobileCelebration({ page, fills, strokes, tweaks, onClose, onLibrary, o
           marginBottom: 10, cursor: 'pointer',
         }}>📜 Try the Word Quest →</button>
 
-        <button onClick={() => {
-          if (!window.speech) return;
-          const voice = page.quest.voice || {};
-          const fullLines = page.quest.lines.map(l => l.replace(/\{(\d+)\}/g, (_m, n) => {
-            const bi = parseInt(n, 10);
-            return (page.quest.blanks[bi] && page.quest.blanks[bi].answer) || '';
-          }));
-          window.speech.speak(`${page.quest.heading}. ${page.quest.author}.`, {
-            rate: (voice.rate || 0.86) + 0.04, pitch: voice.pitch || 1.0, voiceHints: voice.hints,
-            onEnd: () => window.speech.speakLines(fullLines, {
-              rate: voice.rate || 0.82, pitch: voice.pitch || 0.96, voiceHints: voice.hints,
-            })
-          });
-        }} style={{
+        <button onClick={() => speakFamousWords(page)} style={{
           width: '100%',
           padding: '11px 14px',
           background: 'var(--paper-2)', color: 'var(--ink)',
@@ -238,15 +225,6 @@ function MobileCelebration({ page, fills, strokes, tweaks, onClose, onLibrary, o
 // =================================================================
 // Mobile Speech Game — full-height sheet
 // =================================================================
-function shuffleM(arr) {
-  const a = arr.slice();
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
 function MSpeechBody({ quest, picks, focusIdx, onFocusBlank, wrongIdx, playingLine }) {
   return (
     <div style={{
@@ -326,75 +304,11 @@ function MChoiceChip({ word, used, onPick }) {
 }
 
 function MobileSpeechGame({ page, tweaks, onClose, onSolved, onQuestEvent }) {
-  const quest = page.quest;
-  const [picks, setPicks] = useStateMMod({});
-  const [focusIdx, setFocusIdx] = useStateMMod(0);
-  const [wrongIdx, setWrongIdx] = useStateMMod(null);
-  const [solved, setSolved] = useStateMMod(false);
-  const [score, setScore] = useStateMMod({ correct: 0, wrong: 0 });
-  const [showHint, setShowHint] = useStateMMod(false);
-  const [playingLine, setPlayingLine] = useStateMMod(null);
-  const [isReading, setIsReading] = useStateMMod(false);
+  const w = useWordQuest({ page, tweaks, onSolved, onQuestEvent });
+  const { quest, picks, focusIdx, wrongIdx, solved, isReading, currentBlank, usedWords } = w;
   const [sheetIn, setSheetIn] = useStateMMod(false);
 
   useEffectMMod(() => { const t = setTimeout(() => setSheetIn(true), 30); return () => clearTimeout(t); }, []);
-
-  const speakableLines = useMemoMMod(() =>
-    quest.lines.map(line => line.replace(/\{(\d+)\}/g, (_, n) => picks[parseInt(n,10)] || 'blank')),
-    [quest, picks]);
-
-  const playSpeech = () => {
-    if (!window.speech) return;
-    setIsReading(true);
-    const voice = quest.voice || {};
-    window.speech.speak(quest.heading, {
-      rate: voice.rate || 0.9, pitch: voice.pitch || 1.0, voiceHints: voice.hints,
-      onEnd: () => {
-        window.speech.speakLines(speakableLines, {
-          rate: voice.rate || 0.82, pitch: voice.pitch || 0.96, voiceHints: voice.hints,
-          onLine: (idx) => setPlayingLine(idx),
-          onEnd: () => { setPlayingLine(null); setIsReading(false); },
-        });
-      }
-    });
-  };
-  const stopSpeech = () => { if (window.speech) window.speech.stop(); setPlayingLine(null); setIsReading(false); };
-
-  useEffectMMod(() => {
-    if (tweaks.auto_narrate) {
-      const t = setTimeout(playSpeech, 380);
-      return () => { clearTimeout(t); stopSpeech(); };
-    }
-    return () => stopSpeech();
-  }, []);
-
-  const handlePick = (word) => {
-    const correct = word === quest.blanks[focusIdx].answer;
-    if (correct) {
-      if (window.sfx) window.sfx.correct();
-      if (onQuestEvent) onQuestEvent(page.id, 'correct');
-      const next = { ...picks, [focusIdx]: word };
-      setPicks(next);
-      setScore(s => ({ ...s, correct: s.correct + 1 }));
-      const nextEmpty = quest.blanks.findIndex((_, i) => !next[i]);
-      if (nextEmpty === -1) {
-        setSolved(true);
-        if (window.sfx) window.sfx.cheer();
-        setTimeout(() => onSolved && onSolved(page.id), 1100);
-      } else {
-        setFocusIdx(nextEmpty);
-      }
-    } else {
-      if (window.sfx) window.sfx.wrong();
-      if (onQuestEvent) onQuestEvent(page.id, 'wrong');
-      setWrongIdx(focusIdx);
-      setScore(s => ({ ...s, wrong: s.wrong + 1 }));
-      setTimeout(() => setWrongIdx(null), 360);
-    }
-  };
-
-  const currentBlank = quest.blanks[focusIdx];
-  const usedWords = new Set(Object.values(picks));
 
   return (
     <div style={{
@@ -402,7 +316,7 @@ function MobileSpeechGame({ page, tweaks, onClose, onSolved, onQuestEvent }) {
       background: 'rgba(20,14,8,0.65)',
       backdropFilter: 'blur(2px)',
       display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
-    }} onClick={() => { stopSpeech(); onClose(); }}>
+    }} onClick={() => { w.stopSpeech(); onClose(); }}>
       <div onClick={e => e.stopPropagation()} style={{
         position: 'relative',
         background: 'var(--paper)',
@@ -441,7 +355,7 @@ function MobileSpeechGame({ page, tweaks, onClose, onSolved, onQuestEvent }) {
             }}>{quest.heading}</h2>
             <div style={{ color: 'var(--ink-soft)', fontSize: 11, fontStyle: 'italic' }}>{quest.author}</div>
           </div>
-          <button onClick={isReading ? stopSpeech : playSpeech} style={{
+          <button onClick={isReading ? w.stopSpeech : w.playSpeech} style={{
             padding: '8px 12px 8px 8px', flexShrink: 0,
             background: isReading ? 'var(--ink)' : 'var(--accent)',
             color: '#fff',
@@ -457,7 +371,7 @@ function MobileSpeechGame({ page, tweaks, onClose, onSolved, onQuestEvent }) {
             }}>{isReading ? '⏸' : '▶'}</span>
             {isReading ? 'Stop' : 'Play'}
           </button>
-          <button onClick={() => { stopSpeech(); onClose(); }} style={{
+          <button onClick={() => { w.stopSpeech(); onClose(); }} style={{
             width: 32, height: 32, borderRadius: 999,
             background: 'var(--paper)', border: '2px solid var(--ink)',
             boxShadow: '2px 2px 0 var(--ink)',
@@ -481,8 +395,8 @@ function MobileSpeechGame({ page, tweaks, onClose, onSolved, onQuestEvent }) {
               lineHeight: 1, fontWeight: 900, opacity: 0.35, pointerEvents: 'none',
             }}>"</div>
             <MSpeechBody quest={quest} picks={picks} focusIdx={focusIdx}
-              onFocusBlank={(bi) => setFocusIdx(bi)}
-              wrongIdx={wrongIdx} playingLine={playingLine} />
+              onFocusBlank={w.focusBlank}
+              wrongIdx={wrongIdx} playingLine={w.playingLine} />
           </div>
         </div>
 
@@ -501,7 +415,7 @@ function MobileSpeechGame({ page, tweaks, onClose, onSolved, onQuestEvent }) {
           </span>
           <div style={{ flex: 1 }} />
           {!solved && (
-            <button onClick={() => setShowHint(true)} style={{
+            <button onClick={() => w.setShowHint(true)} style={{
               padding: '4px 10px',
               background: 'var(--paper-2)',
               border: '2px solid var(--ink)', borderRadius: 999,
@@ -511,7 +425,7 @@ function MobileSpeechGame({ page, tweaks, onClose, onSolved, onQuestEvent }) {
         </div>
 
         {/* Hint banner */}
-        {showHint && !solved && (
+        {w.showHint && !solved && (
           <div style={{
             padding: '8px 12px',
             background: 'var(--ink)', color: 'var(--paper)',
@@ -520,8 +434,8 @@ function MobileSpeechGame({ page, tweaks, onClose, onSolved, onQuestEvent }) {
             display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center',
             flexShrink: 0, marginBottom: 8,
           }}>
-            <span>Starts with <b>"{currentBlank.answer[0]}"</b> · <b>{currentBlank.answer.replace(/[^\p{L}]/gu, '').length}</b> letters</span>
-            <button onClick={() => setShowHint(false)} style={{ background: 'transparent', color: 'var(--paper)', border: 'none', fontSize: 16 }}>×</button>
+            <span>Starts with <b>"{currentBlank.answer[0]}"</b> · <b>{w.hintLetters}</b> letters</span>
+            <button onClick={() => w.setShowHint(false)} style={{ background: 'transparent', color: 'var(--paper)', border: 'none', fontSize: 16 }}>×</button>
           </div>
         )}
 
@@ -537,8 +451,8 @@ function MobileSpeechGame({ page, tweaks, onClose, onSolved, onQuestEvent }) {
               padding: 10, background: 'rgba(232,163,61,0.18)',
               border: '2px dashed var(--rule)', borderRadius: 14,
             }}>
-              {currentBlank.choices.map((w, i) => (
-                <MChoiceChip key={w + i} word={w} used={usedWords.has(w)} onPick={() => handlePick(w)} />
+              {currentBlank.choices.map((word, i) => (
+                <MChoiceChip key={word + i} word={word} used={usedWords.has(word)} onPick={() => w.pickWord(word)} />
               ))}
             </div>
           </div>

@@ -190,25 +190,7 @@ function Celebration({ page, fills, strokes, tweaks, onClose, onLibrary, onSpeec
               cursor: 'pointer',
             }}>📜 Try the Word Quest →</button>
 
-            <button onClick={() => {
-              if (!window.speech) return;
-              const voice = page.quest.voice || {};
-              const intro = `${page.quest.heading}. ${page.quest.author}.`;
-              const fullLines = page.quest.lines.map(l => l.replace(/\{(\d+)\}/g, (_m, n) => {
-                const bi = parseInt(n, 10);
-                return (page.quest.blanks[bi] && page.quest.blanks[bi].answer) || '';
-              }));
-              window.speech.speak(intro, {
-                rate: (voice.rate || 0.86) + 0.04,
-                pitch: voice.pitch || 1.0,
-                voiceHints: voice.hints,
-                onEnd: () => window.speech.speakLines(fullLines, {
-                  rate: voice.rate || 0.82,
-                  pitch: voice.pitch || 0.96,
-                  voiceHints: voice.hints,
-                })
-              });
-            }} style={{
+            <button onClick={() => speakFamousWords(page)} style={{
               padding: '12px 16px',
               background: 'var(--paper-2)', color: 'var(--ink)',
               border: '2.5px solid var(--ink)', borderRadius: 14,

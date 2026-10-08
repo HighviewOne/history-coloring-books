@@ -153,38 +153,14 @@
   </div>
 </div>
 
-<!-- React + Babel -->
-<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
-<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
-<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<!-- React (production build) -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" integrity="sha384-DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" integrity="sha384-gTGxhz21lVGYNMcdJOyq01Edg0jhn/c22nsx0kyqP0TxaV5WVdsSH1fSDUf5YJj1" crossorigin="anonymous"></script>
 
-<!-- Shared modules (data, audio, brush, components, etc.) -->
-<script type="text/babel" src="tweaks-panel.jsx"></script>
-<script type="text/babel" src="audio.jsx"></script>
-<script type="text/babel" src="pages-data.jsx"></script>
-<script type="text/babel" src="new-pages.jsx"></script>
-<script type="text/babel" src="us-history-pages.jsx"></script>
-<script type="text/babel" src="europe-history-pages.jsx"></script>
-<script type="text/babel" src="greek-roman-pages.jsx"></script>
-<script type="text/babel" src="egyptian-history-pages.jsx"></script>
-<script type="text/babel" src="latin-american-pages.jsx"></script>
-<script type="text/babel" src="japan-history-pages.jsx"></script>
-<script type="text/babel" src="china-history-pages.jsx"></script>
-<script type="text/babel" src="india-history-pages.jsx"></script>
-<script type="text/babel" src="africa-history-pages.jsx"></script>
-<script type="text/babel" src="foundational-pages.jsx"></script>
-<script type="text/babel" src="next-set-pages.jsx"></script>
-<script type="text/babel" src="round-14-pages.jsx"></script>
-<script type="text/babel" src="round-15-pages.jsx"></script>
-<script type="text/babel" src="brush-layer.jsx"></script>
+<!-- App code: compiled from the .jsx files — run `npm run build` after editing -->
+<script src="dist/mobile.js"></script>
 
-<!-- Mobile-specific screens -->
-<script type="text/babel" src="mobile-library.jsx"></script>
-<script type="text/babel" src="mobile-coloring.jsx"></script>
-<script type="text/babel" src="mobile-modals.jsx"></script>
-<script type="text/babel" src="mobile-app.jsx"></script>
-
-<script type="text/babel">
+<script>
   window.__TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
     "theme": "warm-classroom",
     "animation_style": "alive",
@@ -193,7 +169,7 @@
     "sound_on": true,
     "auto_narrate": true
   }/*EDITMODE-END*/;
-  ReactDOM.createRoot(document.getElementById('root')).render(<MobileApp />);
+  ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(MobileApp));
 
   // Scale phone to fit viewport — leave breathing room
   function fitPhone() {
