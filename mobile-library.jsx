@@ -97,7 +97,7 @@ function MPageCard({ page, progress, onOpen }) {
             borderRadius: 999, padding: '2px 7px',
             fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 9,
             letterSpacing: '0.08em',
-          }}>✓ DONE</div>
+          }}>{pct === 100 ? '✓ DONE' : '🏅 STICKER'}</div>
         )}
       </div>
       <div style={{ minWidth: 0 }}>
@@ -117,7 +117,7 @@ function MPageCard({ page, progress, onOpen }) {
       {started ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <div style={{ flex: 1, height: 6, background: 'var(--paper-2)', border: '1.5px solid var(--ink)', borderRadius: 999, overflow: 'hidden' }}>
-            <div style={{ width: pct + '%', height: '100%', background: progress?.completed ? '#5A8F4A' : 'var(--accent-3)' }} />
+            <div style={{ width: pct + '%', height: '100%', background: pct === 100 ? '#5A8F4A' : 'var(--accent-3)' }} />
           </div>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: 10, fontWeight: 800, color: 'var(--ink-soft)', minWidth: 26, textAlign: 'right' }}>{pct}%</div>
         </div>
@@ -140,7 +140,8 @@ function MobileLibraryScreen({ progressMap, onOpen, onGrownUps, onSettings }) {
     us: PAGES_DATA.filter(p => p.collection === 'us').length,
     world: PAGES_DATA.filter(p => p.collection === 'world').length,
   }), []);
-  const completedCount = Object.values(progressMap || {}).filter(p => p.completed).length;
+  const completedCount = PAGES_DATA.filter(p => progressMap[p.id]?.completed).length;
+  const returning = PAGES_DATA.some(p => progressMap[p.id]);
 
   const tabs = [
     { id: 'all', label: 'All', emoji: '🗺️', count: counts.all },
@@ -185,7 +186,7 @@ function MobileLibraryScreen({ progressMap, onOpen, onGrownUps, onSettings }) {
               fontFamily: 'var(--font-display)', fontSize: 9, fontWeight: 800,
               color: 'var(--accent)', letterSpacing: '0.16em', textTransform: 'uppercase',
               lineHeight: 1,
-            }}>Welcome, explorer</div>
+            }}>{returning ? 'Welcome back, explorer' : 'Welcome, explorer'}</div>
             <div style={{ fontFamily: 'var(--font-display)', fontSize: 19, fontWeight: 900, lineHeight: 1.1, letterSpacing: '-0.02em', marginTop: 2 }}>
               History Coloring Books
             </div>

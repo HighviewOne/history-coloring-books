@@ -6,6 +6,7 @@
 
 const PROGRESS_KEY = 'hcb-progress-v1';
 const ERASER_HEX = '#FFFFFF';
+const SAVE_DELAY_MS = 600;
 
 function shuffle(arr) {
   const a = arr.slice();
@@ -26,37 +27,87 @@ function useProgressStore() {
       return raw ? JSON.parse(raw) : {};
     } catch (e) { return {}; }
   });
-
   const [saveFailed, setSaveFailed] = React.useState(false);
-  React.useEffect(() => {
+
+  // Saving re-serializes every page (brush strokes included), so it waits
+  // until edits pause for SAVE_DELAY_MS instead of running on every stroke.
+  // Leaving or hiding the page saves right away.
+  const latest = React.useRef(progressMap);
+  const timer = React.useRef(null);
+  // Pages changed in this tab since the last save, so a save from another
+  // tab (desktop + mobile open at once) can be merged instead of overwriting.
+  // The merge is per page: if both tabs edit the same page at the same time,
+  // the last one to save wins for that page. '*' means "everything" (Reset all).
+  const dirty = React.useRef(new Set());
+
+  const flush = React.useCallback(() => {
+    clearTimeout(timer.current);
+    timer.current = null;
+    const json = JSON.stringify(latest.current);
     try {
-      localStorage.setItem(PROGRESS_KEY, JSON.stringify(progressMap));
+      // Skip identical writes: they would echo back to the other tab forever.
+      if (localStorage.getItem(PROGRESS_KEY) !== json) localStorage.setItem(PROGRESS_KEY, json);
+      dirty.current.clear();
       setSaveFailed(false);
     } catch (e) { setSaveFailed(true); }
+  }, []);
+
+  React.useEffect(() => {
+    latest.current = progressMap;
+    clearTimeout(timer.current);
+    timer.current = setTimeout(flush, SAVE_DELAY_MS);
   }, [progressMap]);
 
-  const patch = (id, fields) => setProgressMap(m => ({ ...m, [id]: { ...(m[id] || {}), ...fields } }));
+  React.useEffect(() => {
+    const onHide = () => { if (document.hidden) flush(); };
+    // Another tab saved: take its pages, but keep the ones changed here
+    // that haven't been saved yet.
+    const onStorage = (e) => {
+      if (e.key !== PROGRESS_KEY && e.key !== null) return; // null = storage cleared
+      let theirs;
+      try { theirs = e.newValue ? JSON.parse(e.newValue) : {}; } catch (err) { return; }
+      setProgressMap(ours => {
+        if (dirty.current.has('*')) return ours;
+        const next = { ...theirs };
+        dirty.current.forEach(id => { if (id in ours) next[id] = ours[id]; else delete next[id]; });
+        return next;
+      });
+    };
+    window.addEventListener('pagehide', flush);
+    document.addEventListener('visibilitychange', onHide);
+    window.addEventListener('storage', onStorage);
+    return () => {
+      window.removeEventListener('pagehide', flush);
+      document.removeEventListener('visibilitychange', onHide);
+      window.removeEventListener('storage', onStorage);
+      flush();
+    };
+  }, []);
+
+  // Every change goes through edit() so the page is marked as changed here.
+  const edit = (id, fn) => { dirty.current.add(id); setProgressMap(fn); };
+  const patch = (id, fields) => edit(id, m => ({ ...m, [id]: { ...(m[id] || {}), ...fields } }));
 
   const actions = {
     markOpened(id) {
-      setProgressMap(m => {
+      edit(id, m => {
         const cur = m[id] || {};
         return { ...m, [id]: { ...cur, opens: (cur.opens || 0) + 1, lastOpenedAt: Date.now() } };
       });
     },
     // Replace a page's progress wholesale (the coloring screen builds the full object).
-    update(id, prog) { setProgressMap(m => ({ ...m, [id]: prog })); },
+    update(id, prog) { edit(id, m => ({ ...m, [id]: prog })); },
     patch,
     markComplete(id) { patch(id, { completed: true, celebrated: true }); },
     addTime(id, ms) {
-      setProgressMap(m => {
+      edit(id, m => {
         const cur = m[id] || {};
         return { ...m, [id]: { ...cur, timeMs: (cur.timeMs || 0) + ms } };
       });
     },
     // Called by the Word Quest on every blank answered (correct or wrong) and on solve.
     recordQuestEvent(id, type) {
-      setProgressMap(m => {
+      edit(id, m => {
         const cur = m[id] || {};
         const q = cur.quest || { correct: 0, wrong: 0, solved: false };
         const next = { ...q };
@@ -68,14 +119,14 @@ function useProgressStore() {
       });
     },
     resetPage(id) {
-      setProgressMap(m => {
+      edit(id, m => {
         const n = { ...m };
         delete n[id];
         return n;
       });
     },
     resetAll() {
-      setProgressMap({});
+      edit('*', () => ({}));
       try { localStorage.removeItem(PROGRESS_KEY); } catch (e) {}
     },
   };
