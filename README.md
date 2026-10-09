@@ -31,8 +31,9 @@ History Coloring Books turns famous moments in history into interactive coloring
 | 🔊 **Read-Aloud Narration** | Web Speech API voices, tuned per historical figure (Lincoln, MLK, Cleopatra, and more) |
 | 📜 **Word Quests** | Fill-in-the-blank on famous speeches; tap-choice or drag-and-drop; line-by-line read-aloud |
 | 🏅 **Sticker Rewards** | Animated sticker reveals (waving flags, spinning suns, confetti) after completing each page |
-| 📊 **Teacher Dashboard** | KPIs, Lexile reading-level map, era coverage, per-page progress table — PIN gated |
+| 📊 **Teacher Dashboard** | KPIs, Lexile reading-level map, era coverage, per-page progress table, time on task — behind a grown-ups times-table question |
 | 📱 **Mobile Version** | iPhone-frame preview with bottom dock, slide-up sheets, and touch-first controls |
+| ⌨️ **Accessibility** | Color with the keyboard (Tab to a region, Enter or Space to fill); screen-reader names for regions and buttons; pop-ups take focus and close with Escape; animations finish instantly with the system "reduce motion" setting |
 | 🎛️ **Settings** | Theme, animation style, sound, auto-narrate, voice speed/pitch, age density (K–2 / Grade 3–5). Desktop: in the Grown-ups dashboard. Mobile: the ⚙️ button on the library screen |
 
 ---
@@ -67,8 +68,8 @@ Mayflower 1620 · Liberty Bell 1776 · Lewis & Clark 1804 · Lincoln 1863 · Sta
 | Narration | Web Speech API (voice profiles per historical figure) |
 | Sound FX | WebAudio API (crayon scribble, correct arpeggio, cheer sparkle) |
 | Drawing | SVG region-fill + SVG freehand brush (midpoint Bézier smoothing; eraser strokes are SVG masks) |
-| State | localStorage keys `hcb-progress-v1` (progress) and `hcb-tweaks-v1` (settings) — no backend, single-device. A banner appears if the browser refuses to save |
-| Hosting | GitHub Pages (root of `main` branch) |
+| State | localStorage keys `hcb-progress-v1` (progress) and `hcb-tweaks-v1` (settings) — no backend, single-device. Saves once edits pause and when the page is hidden; two open tabs merge each other's saves. A banner appears if the browser refuses to save |
+| Hosting | GitHub Pages (root of `main` branch) — merging to `main` publishes the site |
 
 ---
 
@@ -99,6 +100,24 @@ npm test             # browser tests (first time: npx playwright-core install ch
 
 Commit the rebuilt `dist/` with your change. CI fails if `dist/` doesn't match the sources.
 New `.jsx` files must be added to the file lists in `build.mjs`, which set the load order.
+
+The `.jsx` files are plain scripts that share one global scope (the build joins them in order;
+it doesn't treat them as modules). Two files can't declare the same top-level `const`; the
+build fails if they do.
+
+`npm test` runs the browser tests in `tests/app.test.js` offline. They check every page's
+regions and Word Quest, then color, celebrate and solve a quest on desktop and mobile, and cover
+keyboard use, reduced motion, saving and two open tabs.
+
+### Adding a coloring page
+
+1. Draw the SVG component in one of the `*-pages.jsx` files. Give each colorable shape
+   `{...reg(fills, onRegion, 'region-id')}`. The id is also the name screen readers hear, so make it readable (`hat-brim`).
+2. Add the page object to that file's list: `id`, `title`, `subtitle`, `collection` (`us` or `world`),
+   `eraLabel`, `eraColor`, `bgPreview`, `fact`, `Component`, `readingLevel`, `regions` (every id from step 1)
+   and `quest` (`lines` with `{0}`, `{1}`… blanks, plus `blanks` with `answer` and `choices`).
+3. `npm run build && npm test`. The tests fail if a listed region is missing from the SVG, or if a
+   quest blank has no matching `{n}` or its answer isn't one of its choices.
 
 ---
 
@@ -133,6 +152,7 @@ New `.jsx` files must be added to the file lists in `build.mjs`, which set the l
 ├── build.mjs                         ← Compiles the .jsx files (npm run build)
 ├── dist/                             ← Compiled app code the pages load (committed)
 ├── tests/                            ← Browser tests (npm test)
+├── .github/workflows/ci.yml          ← CI: dist/ up to date + tests, on PRs and main
 └── LICENSE                           ← MIT license
 ```
 
@@ -149,6 +169,7 @@ Word Quest passages quote historical speeches and writings. Those texts are not 
 ## Contributing
 
 Suggestions, bug reports, and new coloring page ideas are welcome — please [open an issue](https://github.com/HighviewOne/history-coloring-books/issues).
+Pull requests run CI (the build check and browser tests) before they can be merged.
 
 ---
 
