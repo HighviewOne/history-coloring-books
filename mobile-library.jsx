@@ -86,7 +86,7 @@ function MPageCard({ page, progress, onOpen }) {
       }}>
         <div style={{ position: 'absolute', inset: 0, padding: 6 }}>
           <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-            <Comp fills={fills} onRegion={() => {}} alive={false} />
+            <Comp fills={fills} onRegion={null} alive={false} />
             <StrokesLayer strokes={progress?.strokes || []} />
           </div>
         </div>
@@ -245,7 +245,7 @@ function MobileLibraryScreen({ progressMap, onOpen, onGrownUps, onSettings }) {
           }}>
             <div style={{ position: 'relative', height: 156, background: '#FFE9B8', borderBottom: '2px solid var(--ink)' }}>
               <div style={{ position: 'absolute', inset: 0, padding: 12 }}>
-                <MLKSVG fills={{ sun: '#FFC857', sky: '#CFEAF8', 'cloud-l': '#FFFFFF', 'cloud-r': '#FFFFFF', face: '#C9824C', hair: '#3A1F0F', suit: '#1B1B1B', tie: '#7A1A78', shirt: '#FFFDF5', podium: '#7B4B25', 'podium-seal': '#F4A6BC', 'mic-head': '#4A5568', 'lapel-l': '#0E0E10', 'lapel-r': '#0E0E10', crowd: '#3A0CA3', neck: '#C9824C' }} onRegion={() => {}} alive={true} />
+                <MLKSVG fills={{ sun: '#FFC857', sky: '#CFEAF8', 'cloud-l': '#FFFFFF', 'cloud-r': '#FFFFFF', face: '#C9824C', hair: '#3A1F0F', suit: '#1B1B1B', tie: '#7A1A78', shirt: '#FFFDF5', podium: '#7B4B25', 'podium-seal': '#F4A6BC', 'mic-head': '#4A5568', 'lapel-l': '#0E0E10', 'lapel-r': '#0E0E10', crowd: '#3A0CA3', neck: '#C9824C' }} onRegion={null} alive={true} />
               </div>
               <div style={{
                 position: 'absolute', top: 10, left: 10,

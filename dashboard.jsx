@@ -170,7 +170,7 @@ function Recommendations({ pages, progressMap, onOpen }) {
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
             <div style={{ width: 60, height: 60, borderRadius: 10, background: r.page.bgPreview, border: '2px solid var(--ink)', overflow: 'hidden', flex: '0 0 60px' }}>
               <div style={{ width: '100%', height: '100%', padding: 4 }}>
-                <r.page.Component fills={{}} onRegion={() => {}} alive={false} />
+                <r.page.Component fills={{}} onRegion={null} alive={false} />
               </div>
             </div>
             <div style={{ minWidth: 0, flex: 1 }}>

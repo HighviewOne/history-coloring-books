@@ -260,6 +260,37 @@ function useColoring({ page, progress, onProgress, onComplete, defaultBrushWidth
   };
 }
 
+// ── Dialog focus ─────────────────────────────────────────────
+// For overlays (celebration, Word Quest): moves keyboard focus into the
+// dialog, keeps Tab inside it, closes on Escape, and puts focus back where
+// it was (e.g. the region just colored) when the dialog closes.
+// Spread the returned props on the dialog panel.
+function useDialog(onClose) {
+  const ref = React.useRef(null);
+  const closeRef = React.useRef(onClose);
+  closeRef.current = onClose;
+  React.useEffect(() => {
+    const prev = document.activeElement;
+    const el = ref.current;
+    if (el) el.focus({ preventScroll: true });
+    const onKey = (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); closeRef.current && closeRef.current(); return; }
+      if (e.key !== 'Tab' || !el) return;
+      const items = [...el.querySelectorAll('button, [tabindex="0"]')].filter(n => !n.disabled && n.offsetParent !== null);
+      if (!items.length) return;
+      const first = items[0], last = items[items.length - 1];
+      if (e.shiftKey && (document.activeElement === first || document.activeElement === el)) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && (document.activeElement === last || !el.contains(document.activeElement))) { e.preventDefault(); first.focus(); }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      if (prev && prev.isConnected && prev.focus) prev.focus({ preventScroll: true });
+    };
+  }, []);
+  return { ref, role: 'dialog', 'aria-modal': true, tabIndex: -1 };
+}
+
 // ── Read-aloud helpers ───────────────────────────────────────
 function questFullLines(quest) {
   return quest.lines.map(l => l.replace(/\{(\d+)\}/g, (_m, n) => {
@@ -382,5 +413,5 @@ function useWordQuest({ page, tweaks, onSolved, onQuestEvent }) {
 
 Object.assign(window, {
   shuffle, useProgressStore, useAudioTweaks, applyTheme, useTimeOnTask,
-  useColoring, useWordQuest, speakFamousWords, questFullLines,
+  useColoring, useWordQuest, speakFamousWords, questFullLines, useDialog,
 });

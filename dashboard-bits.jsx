@@ -261,7 +261,7 @@ function PageRow({ page, progress, onOpen, onReset }) {
       <td style={{ padding: '12px 8px', width: 64 }}>
         <div style={{ width: 56, height: 56, borderRadius: 10, background: page.bgPreview, border: '2px solid var(--ink)', overflow: 'hidden' }}>
           <div style={{ width: '100%', height: '100%', padding: 4, position: 'relative' }}>
-            <page.Component fills={fills} onRegion={() => {}} alive={false} />
+            <page.Component fills={fills} onRegion={null} alive={false} />
             <StrokesLayer strokes={progress?.strokes || []} />
           </div>
         </div>

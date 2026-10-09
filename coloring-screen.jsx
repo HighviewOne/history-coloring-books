@@ -282,7 +282,7 @@ function ColoringScreen({ page, progress, onProgress, onBack, onComplete, onShow
                     display: 'inline-flex', alignItems: 'center', gap: 6,
                   }}>🔊 Read it to me</button>
                 </div>
-                <button onClick={c.closeHint} style={{ background: 'transparent', color: 'var(--paper)', border: 'none', fontSize: 22, lineHeight: 1, padding: 0 }}>×</button>
+                <button onClick={c.closeHint} aria-label="Close tip" style={{ background: 'transparent', color: 'var(--paper)', border: 'none', fontSize: 22, lineHeight: 1, padding: 0 }}>×</button>
               </div>
             </div>
           )}

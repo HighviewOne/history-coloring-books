@@ -126,6 +126,21 @@
     overflow: hidden;
     background: var(--paper);
   }
+  /* Keyboard focus on a colorable region: a dashed blue outline that can't be
+     mistaken for crayon color. */
+  [data-region]:focus, [role="dialog"]:focus { outline: none; }
+  [data-region]:focus-visible { stroke: #1B6EF3; stroke-width: 7px; stroke-dasharray: 12 6; }
+
+  /* Respect the system "reduce motion" setting: confetti, sparkles, the
+     "alive" page animations and sheet slides finish instantly. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      animation-delay: 0s !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 </style>
 </head>
 <body>
