@@ -41,7 +41,7 @@ async function openApp(htmlFile, tweaks = {}) {
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   page.on('console', m => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errors.push(m.text()); });
-  await page.route('**/*', r => {
+  await ctx.route('**/*', r => {
     const url = r.request().url();
     if (url.startsWith('https://unpkg.com/')) {
       const local = UNPKG[url.slice('https://unpkg.com/'.length)];
@@ -49,7 +49,7 @@ async function openApp(htmlFile, tweaks = {}) {
     }
     return url.startsWith(base) ? r.continue() : r.abort();
   });
-  await page.addInitScript((tw) => {
+  await ctx.addInitScript((tw) => {
     window.confirm = () => true;
     localStorage.setItem('hcb-tweaks-v1', JSON.stringify({ auto_narrate: false, ...tw }));
   }, tweaks);
@@ -58,7 +58,11 @@ async function openApp(htmlFile, tweaks = {}) {
   return { ctx, page, errors };
 }
 
-const progress = (page, id) => page.evaluate((id) => (JSON.parse(localStorage.getItem('hcb-progress-v1') || '{}'))[id] || {}, id);
+// Saves wait for a pause in edits; 'pagehide' (leaving the page) saves right away.
+const progress = (page, id) => page.evaluate((id) => {
+  window.dispatchEvent(new Event('pagehide'));
+  return (JSON.parse(localStorage.getItem('hcb-progress-v1') || '{}'))[id] || {};
+}, id);
 const bodyText = (page) => page.evaluate(() => document.body.innerText);
 // Click the first button whose visible text matches `re` (Playwright's own
 // click misses inside the 100vh overflow:hidden root).
@@ -260,6 +264,71 @@ test('reduced motion: celebration confetti finishes instantly', async () => {
     .map(el => getComputedStyle(el)).filter(cs => cs.animationName !== 'none').map(cs => parseFloat(cs.animationDuration)));
   assert.ok(durations.length > 0, 'found animated elements');
   assert.ok(durations.every(d => d < 0.001), 'all animations shortened: ' + [...new Set(durations)].join(','));
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+const openLibertyBell = async (page) => {
+  await page.evaluate(() => [...document.querySelectorAll('button')].find(b => /Liberty Bell/.test(b.innerText) && b.querySelector('svg')).click());
+  await page.waitForSelector('[data-region="body"]');
+};
+const fillRegion = async (page, crayonTitle, region) => {
+  await page.click(`button[title="${crayonTitle}"]`);
+  await page.locator(`[data-region="${region}"]`).first().dispatchEvent('click');
+};
+
+test('saves wait for a pause in edits, then land', async () => {
+  const { ctx, page, errors } = await openApp('History Coloring Books.html');
+  assert.match(await bodyText(page), /Welcome, explorer/i, 'first visit says Welcome');
+  await openLibertyBell(page);
+  await page.waitForTimeout(800);
+  await fillRegion(page, 'Sky', 'body');
+  const raw = () => page.evaluate(() => (JSON.parse(localStorage.getItem('hcb-progress-v1') || '{}'))['liberty-bell'] || {});
+  assert.equal((await raw()).fills, undefined, 'not saved on every edit');
+  await page.waitForTimeout(900);
+  assert.equal((await raw()).fills.body, '#4361EE', 'saved after the pause');
+  await clickText(page, /Library$/);
+  assert.match(await bodyText(page), /Welcome back, explorer/i, 'returning visit says Welcome back');
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('two open tabs merge their progress instead of overwriting it', async () => {
+  // Two tabs on different pages (the case that used to lose work).
+  const a = await openApp('History Coloring Books.html');
+  const b = await a.ctx.newPage();
+  await b.goto(a.page.url());
+  await b.waitForFunction(() => document.querySelectorAll('svg').length > 20);
+  await openLibertyBell(a.page);
+  await b.evaluate(() => [...document.querySelectorAll('button')].find(el => /President Lincoln/.test(el.innerText) && el.querySelector('svg')).click());
+  await b.waitForSelector('[data-region="coat"]');
+  await fillRegion(a.page, 'Sky', 'body');
+  await fillRegion(b, 'Cherry', 'coat');
+  await a.page.waitForTimeout(1500);
+  const saved = await a.page.evaluate(() => JSON.parse(localStorage.getItem('hcb-progress-v1')));
+  assert.equal(saved['liberty-bell']?.fills?.body, '#4361EE', 'tab A edit kept');
+  assert.equal(saved.lincoln?.fills?.coat, '#E63946', 'tab B edit kept');
+  // Tab A's own state picked up tab B's page, so its next save won't drop it
+  await fillRegion(a.page, 'Sky', 'yoke');
+  await a.page.waitForTimeout(1000);
+  const again = await a.page.evaluate(() => JSON.parse(localStorage.getItem('hcb-progress-v1')));
+  assert.equal(again.lincoln?.fills?.coat, '#E63946', 'tab B edit survives tab A saving again');
+  assert.deepEqual(a.errors, []);
+  await a.ctx.close();
+});
+
+test('a cleared finished page keeps its sticker but is not shown as complete', async () => {
+  const { ctx, page, errors } = await openApp('History Coloring Books.html');
+  await openLibertyBell(page);
+  await clickText(page, /random$/i);
+  await page.waitForFunction(() => /woohoo/i.test(document.body.innerText), null, { timeout: 5000 });
+  await page.keyboard.press('Escape');
+  await clickText(page, /clear$/i);
+  await clickText(page, /Library$/);
+  const txt = await bodyText(page);
+  assert.match(txt, /STICKER EARNED/);
+  assert.doesNotMatch(txt, /COMPLETE/);
+  assert.match(txt, /\b1\s*\/\s*62\b/, 'sticker still counted');
   assert.deepEqual(errors, []);
   await ctx.close();
 });

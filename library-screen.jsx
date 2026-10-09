@@ -103,7 +103,7 @@ function PageThumb({ page, progress }) {
           borderRadius: 999, padding: '5px 12px',
           fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13,
           letterSpacing: '0.06em',
-        }}>✓ COMPLETE</div>
+        }}>{colored >= total ? '✓ COMPLETE' : '🏅 STICKER EARNED'}</div>
       )}
     </div>
   );
@@ -151,7 +151,7 @@ function PageCard({ page, progress, onOpen }) {
       {started ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ flex: 1, height: 8, background: 'var(--paper-2)', border: '2px solid var(--ink)', borderRadius: 999, overflow: 'hidden' }}>
-            <div style={{ width: pct + '%', height: '100%', background: progress?.completed ? '#5A8F4A' : 'var(--accent-3)', transition: 'width 300ms' }} />
+            <div style={{ width: pct + '%', height: '100%', background: pct === 100 ? '#5A8F4A' : 'var(--accent-3)', transition: 'width 300ms' }} />
           </div>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 800, color: 'var(--ink-soft)', minWidth: 36, textAlign: 'right' }}>{pct}%</div>
         </div>
@@ -177,7 +177,8 @@ function LibraryScreen({ progressMap, onOpen, onGrownUps }) {
     us: PAGES_DATA.filter(p => p.collection === 'us').length,
     world: PAGES_DATA.filter(p => p.collection === 'world').length,
   }), []);
-  const completedCount = Object.values(progressMap || {}).filter(p => p.completed).length;
+  const completedCount = PAGES_DATA.filter(p => progressMap[p.id]?.completed).length;
+  const returning = PAGES_DATA.some(p => progressMap[p.id]);
 
   return (
     <div style={{ width: '100%', height: '100%', overflowY: 'auto', background: 'var(--paper)' }} className="paper-grain">
@@ -207,7 +208,7 @@ function LibraryScreen({ progressMap, onOpen, onGrownUps }) {
                 fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 800,
                 color: 'var(--accent)', letterSpacing: '0.16em', textTransform: 'uppercase',
                 marginBottom: 6,
-              }}>Welcome back, explorer</div>
+              }}>{returning ? 'Welcome back, explorer' : 'Welcome, explorer'}</div>
               <h1 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: 44, fontWeight: 900, lineHeight: 0.95, letterSpacing: '-0.025em' }}>History Coloring Books</h1>
             </div>
           </div>

@@ -87,7 +87,6 @@ function MobileApp() {
           fills={(progressMap[activePage.id] || {}).fills || {}}
           strokes={(progressMap[activePage.id] || {}).strokes || []}
           tweaks={tweaks}
-          alreadyDone={false}
           onClose={() => setScreen('color')}
           onLibrary={goLibrary}
           onSpeechQuest={() => setScreen('quest')}

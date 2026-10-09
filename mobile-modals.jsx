@@ -59,7 +59,7 @@ function MSparkles({ count = 12 }) {
   );
 }
 
-function MobileCelebration({ page, fills, strokes, tweaks, onClose, onLibrary, onSpeechQuest, alreadyDone }) {
+function MobileCelebration({ page, fills, strokes, tweaks, onClose, onLibrary, onSpeechQuest }) {
   const Comp = page.Component;
   const [stage, setStage] = useStateMMod(0);
   const [sheetIn, setSheetIn] = useStateMMod(false);
@@ -121,7 +121,7 @@ function MobileCelebration({ page, fills, strokes, tweaks, onClose, onLibrary, o
             margin: '4px 0 0', fontFamily: 'var(--font-display)',
             fontSize: 24, fontWeight: 900, letterSpacing: '-0.02em', lineHeight: 1.1,
           }}>
-            {alreadyDone ? 'Your finished page!' : 'You finished the page!'}
+            You finished the page!
           </h2>
         </div>
 

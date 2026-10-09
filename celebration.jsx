@@ -63,7 +63,7 @@ function Sparkles({ count = 16 }) {
   );
 }
 
-function Celebration({ page, fills, strokes, tweaks, onClose, onLibrary, onSpeechQuest, alreadyDone }) {
+function Celebration({ page, fills, strokes, tweaks, onClose, onLibrary, onSpeechQuest }) {
   const Comp = page.Component;
   const [stage, setStage] = useStateCel(0); // 0: bring alive, 1: sticker reveal
   const anim = tweaks.animation_style || 'alive';
@@ -112,7 +112,7 @@ function Celebration({ page, fills, strokes, tweaks, onClose, onLibrary, onSpeec
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontFamily: 'var(--font-hand)', fontSize: 32, color: 'var(--accent)', lineHeight: 1 }}>woohoo!</div>
           <h2 style={{ margin: '4px 0 0', fontFamily: 'var(--font-display)', fontSize: 40, fontWeight: 900, letterSpacing: '-0.02em' }}>
-            {alreadyDone ? 'Look at your finished page!' : 'You finished the page!'}
+            You finished the page!
           </h2>
           <div style={{ fontSize: 16, color: 'var(--ink-soft)', marginTop: 4 }}>Watch what happens next ✨</div>
         </div>
