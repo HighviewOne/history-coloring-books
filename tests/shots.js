@@ -72,6 +72,11 @@ const SCENES = {
     const [a, b] = (await page.evaluate(() => document.body.innerText)).match(/(\d+) × (\d+)/).slice(1).map(Number);
     await page.evaluate((n) => [...document.querySelectorAll('button')].find(el => el.innerText.trim() === String(n)).click(), a * b);
   },
+  '09-reading-map': async (page, size) => {
+    if (await SCENES['08-dashboard'](page, size) === null) return null;
+    await page.waitForTimeout(300);
+    await page.evaluate(() => [...document.querySelectorAll('h3')].find(h => /Reading Level Map/.test(h.innerText)).scrollIntoView());
+  },
 };
 
 (async () => {
