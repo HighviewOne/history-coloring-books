@@ -140,6 +140,13 @@ function ReadingLevelMap({ pages, progressMap }) {
     { from: 850, to: 1000, label: '4–5',  tint: 'rgba(247, 127, 0, 0.28)' },
     { from: 1000, to: 1100, label: '6+',  tint: 'rgba(200, 16, 46, 0.26)' },
   ];
+  const lex = (p) => p.readingLevel?.lexile || 600;
+  const bandOf = (l) => bands.find(b => l < b.to) || bands[bands.length - 1];
+  // One dot per reading level; many pages share one
+  const levels = [...new Set(pages.map(lex))].sort((a, b) => a - b).map(lexile => {
+    const list = pages.filter(p => lex(p) === lexile);
+    return { lexile, list, allDone: list.every(p => progressMap?.[p.id]?.completed) };
+  });
 
   return (
     <div style={{
@@ -159,10 +166,26 @@ function ReadingLevelMap({ pages, progressMap }) {
         </div>
       </div>
 
-      {/* Bands */}
-      <div style={{ position: 'relative', height: 220, marginTop: 8 }}>
-        {/* band backgrounds */}
-        <div style={{ position: 'absolute', left: 0, right: 0, top: 28, height: 120, border: '2px solid var(--ink)', borderRadius: 10, overflow: 'hidden', background: 'var(--paper-2)' }}>
+      {/* Axis numbers at their real positions, then one dot per reading level, then the grade bands */}
+      <div style={{ position: 'relative', height: 132, marginTop: 8 }}>
+        {[400, 550, 700, 850, 1000].map((l, i) => (
+          <span key={l} style={{
+            position: 'absolute', top: 0, left: pct(l) + '%',
+            transform: i === 0 ? 'none' : 'translateX(-50%)',
+            fontSize: 'clamp(9px, 1.1vw, 11px)', color: 'var(--ink-soft)', fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '0.08em',
+          }}>{l}L</span>
+        ))}
+        {levels.map(({ lexile, list, allDone }) => (
+          <div key={lexile} title={list.map(p => p.title).join('\n')} style={{
+            position: 'absolute', top: 22, left: `calc(${pct(lexile)}% - 12px)`,
+            width: 24, height: 24, borderRadius: 999, zIndex: 1,
+            background: allDone ? '#2D6A4F' : list[0].eraColor,
+            border: '2.5px solid var(--ink)', boxShadow: '2px 2px 0 var(--ink)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#fff', fontSize: 11, fontWeight: 900, fontFamily: 'var(--font-display)',
+          }}>{allDone ? '✓' : (list.length > 1 ? list.length : '')}</div>
+        ))}
+        <div style={{ position: 'absolute', left: 0, right: 0, top: 36, height: 96, border: '2px solid var(--ink)', borderRadius: 10, overflow: 'hidden', background: 'var(--paper-2)' }}>
           {bands.map((b, i) => (
             <div key={i} style={{
               position: 'absolute', top: 0, bottom: 0,
@@ -172,57 +195,29 @@ function ReadingLevelMap({ pages, progressMap }) {
               borderRight: i < bands.length - 1 ? '1.5px dashed rgba(0,0,0,0.18)' : 'none',
               display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
               padding: '4px 0 6px',
-              fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12, color: 'var(--ink)',
-              letterSpacing: '0.06em',
+              fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(8px, 1.2vw, 12px)', color: 'var(--ink)',
+              letterSpacing: '0.04em', whiteSpace: 'nowrap', overflow: 'hidden',
             }}>Grade {b.label}</div>
           ))}
         </div>
-        {/* axis labels */}
-        <div style={{ position: 'absolute', left: 0, right: 0, top: 8, fontSize: 11, color: 'var(--ink-soft)', display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '0.08em' }}>
-          <span>400L</span><span>550L</span><span>700L</span><span>850L</span><span>1000L</span><span>1100L</span>
-        </div>
-        {/* page dots */}
-        <div style={{ position: 'absolute', left: 0, right: 0, top: 152, height: 0 }}>
-          {pages.map((p, i) => {
-            const l = p.readingLevel?.lexile || 600;
-            const x = pct(l);
-            const done = progressMap?.[p.id]?.completed;
-            // stagger labels vertically to avoid overlap
-            const lane = i % 3;
-            return (
-              <div key={p.id} style={{
-                position: 'absolute',
-                left: `calc(${x}% - 16px)`,
-                top: -100 + lane * 0,
-              }}>
-                {/* drop line from top band into label */}
-                <div style={{ position: 'absolute', left: 14, top: -42, width: 0, height: 42, borderLeft: '2px dashed ' + p.eraColor, opacity: 0.7 }} />
-                {/* dot */}
-                <div style={{
-                  position: 'absolute', left: 6, top: -50,
-                  width: 22, height: 22, borderRadius: 999,
-                  background: p.eraColor,
-                  border: '2.5px solid var(--ink)',
-                  boxShadow: '2px 2px 0 var(--ink)',
-                }}>
-                  {done && (
-                    <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 11, fontWeight: 900 }}>✓</span>
-                  )}
-                </div>
-                {/* label */}
-                <div style={{
-                  position: 'absolute', top: 8 + lane * 18,
-                  left: -54, width: 140, textAlign: 'center',
-                  fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
-                  color: 'var(--ink)',
-                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                }}>
-                  <span style={{ background: 'var(--paper)', padding: '1px 6px', borderRadius: 4, border: '1.5px solid var(--ink)' }}>{p.title.replace(/^The /, '')} · {l}L</span>
-                </div>
+      </div>
+
+      {/* Every page by name, grouped by grade band */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '12px 18px', marginTop: 16 }}>
+        {bands.map(b => ({ b, list: pages.filter(p => bandOf(lex(p)) === b) })).filter(g => g.list.length).map(({ b, list }) => (
+          <div key={b.label}>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, padding: '3px 8px', borderRadius: 6, background: b.tint, border: '1.5px solid var(--ink)', marginBottom: 6 }}>
+              Grade {b.label} · {list.length} {list.length === 1 ? 'page' : 'pages'}
+            </div>
+            {[...list].sort((x, y) => lex(x) - lex(y)).map(p => (
+              <div key={p.id} style={{ display: 'flex', gap: 6, fontSize: 12, lineHeight: 1.7, color: 'var(--ink)' }}>
+                <span style={{ width: 8, height: 8, borderRadius: 999, background: p.eraColor, border: '1px solid var(--ink)', flexShrink: 0, marginTop: 6 }} />
+                <span style={{ flex: 1 }}>{p.title.replace(/^The /, '')}{progressMap?.[p.id]?.completed ? ' ✓' : ''}</span>
+                <span style={{ color: 'var(--ink-soft)', fontVariantNumeric: 'tabular-nums' }}>{lex(p)}L</span>
               </div>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        ))}
       </div>
     </div>
   );
