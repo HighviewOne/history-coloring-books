@@ -180,6 +180,18 @@
     margin-top: 3px;
     line-height: 1.3;
   }
+  .versions { display: flex; flex-direction: column; }
+  .version-btn .text .pick-tag {
+    display: none;
+    font-size: 10px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+    color: #fff; background: var(--accent); border-radius: 999px; padding: 2px 8px;
+    margin: 0 0 0 6px; vertical-align: 3px; line-height: 1.4;
+  }
+  /* On a phone, put the phone version first and say it's the one to pick */
+  @media (max-width: 600px) {
+    .version-btn.phone { order: -1; }
+    .version-btn.phone .text .pick-tag { display: inline-block; }
+  }
   .version-btn .arrow {
     font-size: 20px;
     color: var(--ink-soft);
@@ -239,6 +251,7 @@
   <div class="body">
     <div class="section-label">Choose your version</div>
 
+    <div class="versions">
     <a class="version-btn" href="History Coloring Books.html">
       <div class="icon desktop">🖥️</div>
       <div class="text">
@@ -248,14 +261,15 @@
       <div class="arrow">→</div>
     </a>
 
-    <a class="version-btn" href="History Coloring Books Mobile.html">
+    <a class="version-btn phone" href="History Coloring Books Mobile.html">
       <div class="icon mobile">📱</div>
       <div class="text">
-        <strong>Mobile Preview</strong>
-        <span>iPhone frame with bottom dock, slide-up sheets, and touch controls</span>
+        <strong>Phone<span class="pick-tag">Best here</span></strong>
+        <span>Bottom dock, slide-up sheets and touch controls. Fills a phone screen; on a computer it shows in a phone frame</span>
       </div>
       <div class="arrow">→</div>
     </a>
+    </div>
 
     <div class="divider"></div>
 
