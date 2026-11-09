@@ -332,3 +332,22 @@ test('a cleared finished page keeps its sticker but is not shown as complete', a
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('mobile page: framed preview on a wide screen, full screen on a phone', async () => {
+  const { ctx, page, errors } = await openApp('History Coloring Books Mobile.html');
+  const look = () => page.evaluate(() => ({
+    statusBar: getComputedStyle(document.querySelector('.status-bar')).display,
+    rootWidth: Math.round(document.getElementById('root').getBoundingClientRect().width),
+    rootTop: Math.round(document.getElementById('root').getBoundingClientRect().top),
+  }));
+  const wide = await look();
+  assert.notEqual(wide.statusBar, 'none', 'the preview draws a status bar');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(200);
+  const phone = await look();
+  assert.equal(phone.statusBar, 'none', 'no drawn status bar on a phone');
+  assert.equal(phone.rootWidth, 390, 'the app fills the phone width');
+  assert.equal(phone.rootTop, 0, 'the app starts at the top of the screen');
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
