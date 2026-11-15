@@ -21,6 +21,8 @@ History Coloring Books turns famous moments in history into interactive coloring
 
 **Best experienced in Chrome or Safari.** Firefox has limited Web Speech support.
 
+**Works offline.** After one visit, the app keeps working with no internet connection. It can also be installed like an app: "Add to Home Screen" on an iPad or iPhone, or the install button in Chrome's address bar.
+
 ---
 
 ## Features
@@ -61,7 +63,7 @@ Mayflower 1620 · Liberty Bell 1776 · Lewis & Clark 1804 · Lincoln 1863 · Sta
 
 | Layer | Technology |
 |---|---|
-| UI | React 18.3.1 + ReactDOM (production UMD via unpkg) |
+| UI | React 18.3.1 + ReactDOM (production UMD, copied into `dist/` by the build so nothing loads from a CDN) |
 | Build | esbuild compiles the `.jsx` files into `dist/desktop.js` and `dist/mobile.js` (committed) |
 | Tests | Node's test runner + Playwright (headless Chromium), offline |
 | Fonts | Google Fonts: Fraunces · Nunito · Caveat |
@@ -150,7 +152,9 @@ keyboard use, reduced motion, saving and two open tabs.
 ├── *-pages.jsx                       ← SVG coloring page definitions
 │
 ├── build.mjs                         ← Compiles the .jsx files (npm run build)
-├── dist/                             ← Compiled app code the pages load (committed)
+├── dist/                             ← Compiled app code + React the pages load (committed)
+├── sw.js                             ← Service worker: caches the app for offline use
+├── manifest.webmanifest / icons/     ← Install-as-app name and icons (icons/icon.svg is the source)
 ├── tests/                            ← Browser tests (npm test)
 ├── .github/workflows/ci.yml          ← CI: dist/ up to date + tests, on PRs and main
 └── LICENSE                           ← MIT license

@@ -2,7 +2,7 @@
 // shots/<desktop|tablet|phone|phone-desktop-page>/. Nothing here asserts on looks — the pictures are for a
 // person (or Claude) to look over for what the tests can't see: clipped text, overlapping
 // controls, a cramped phone layout. shots/ is git-ignored; `npm test` skips this file.
-// Same offline setup as app.test.js: React from node_modules, every outside request blocked.
+// Same offline setup as app.test.js: every outside request blocked.
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -10,11 +10,7 @@ const { chromium } = require('playwright-core');
 
 const root = path.join(__dirname, '..');
 const out = path.join(root, 'shots');
-const UNPKG = {
-  'react@18.3.1/umd/react.production.min.js': path.join(root, 'node_modules/react/umd/react.production.min.js'),
-  'react-dom@18.3.1/umd/react-dom.production.min.js': path.join(root, 'node_modules/react-dom/umd/react-dom.production.min.js'),
-};
-const TYPES = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml' };
+const TYPES = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml', '.webmanifest': 'application/manifest+json' };
 
 const DESKTOP = 'History Coloring Books.html';
 const MOBILE = 'History Coloring Books Mobile.html';
@@ -97,10 +93,6 @@ const SCENES = {
         const ctx = await browser.newContext({ viewport: size.viewport, reducedMotion: 'reduce', hasTouch: !!(size.mobile || size.touch) });
         await ctx.route('**/*', r => {
           const url = r.request().url();
-          if (url.startsWith('https://unpkg.com/')) {
-            const local = UNPKG[url.slice('https://unpkg.com/'.length)];
-            return local ? r.fulfill({ path: local, contentType: 'application/javascript', headers: { 'access-control-allow-origin': '*' } }) : r.abort();
-          }
           return url.startsWith(base) ? r.continue() : r.abort();
         });
         await ctx.addInitScript(() => {
