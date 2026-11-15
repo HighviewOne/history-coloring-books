@@ -1,6 +1,6 @@
 // Browser tests for the built app (dist/). Run with `npm test` after `npm run build`.
-// Serves the repo on a local port, loads React from node_modules instead of
-// unpkg, and blocks every other outside request (Google Fonts), so it runs offline.
+// Serves the repo on a local port, blocks every outside request (Google Fonts),
+// so it runs offline.
 // Needs a Chromium for playwright-core: `npx playwright-core install chromium`.
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -10,17 +10,14 @@ const path = require('node:path');
 const { chromium } = require('playwright-core');
 
 const root = path.join(__dirname, '..');
-const UNPKG = {
-  'react@18.3.1/umd/react.production.min.js': path.join(root, 'node_modules/react/umd/react.production.min.js'),
-  'react-dom@18.3.1/umd/react-dom.production.min.js': path.join(root, 'node_modules/react-dom/umd/react-dom.production.min.js'),
-};
-const TYPES = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml' };
+const TYPES = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml', '.webmanifest': 'application/manifest+json' };
 
 let server, base, browser;
 
 test.before(async () => {
   server = http.createServer((req, res) => {
-    const file = path.join(root, decodeURIComponent(new URL(req.url, 'http://x').pathname));
+    let file = path.join(root, decodeURIComponent(new URL(req.url, 'http://x').pathname));
+    if (fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, 'index.html'); // like GitHub Pages
     if (!file.startsWith(root) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) { res.writeHead(404); return res.end(); }
     res.writeHead(200, { 'content-type': TYPES[path.extname(file)] || 'application/octet-stream' });
     fs.createReadStream(file).pipe(res);
@@ -43,10 +40,6 @@ async function openApp(htmlFile, tweaks = {}) {
   page.on('console', m => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errors.push(m.text()); });
   await ctx.route('**/*', r => {
     const url = r.request().url();
-    if (url.startsWith('https://unpkg.com/')) {
-      const local = UNPKG[url.slice('https://unpkg.com/'.length)];
-      return local ? r.fulfill({ path: local, contentType: 'application/javascript', headers: { 'access-control-allow-origin': '*' } }) : r.abort();
-    }
     return url.startsWith(base) ? r.continue() : r.abort();
   });
   await ctx.addInitScript((tw) => {
@@ -54,7 +47,8 @@ async function openApp(htmlFile, tweaks = {}) {
     localStorage.setItem('hcb-tweaks-v1', JSON.stringify({ auto_narrate: false, ...tw }));
   }, tweaks);
   await page.goto(base + encodeURI(htmlFile));
-  await page.waitForFunction(() => document.querySelectorAll('svg').length > 20, null, { timeout: 30000 });
+  // The coloring apps are ready once their artwork has drawn; the start page has none.
+  if (htmlFile !== 'index.html') await page.waitForFunction(() => document.querySelectorAll('svg').length > 20, null, { timeout: 30000 });
   return { ctx, page, errors };
 }
 
@@ -348,6 +342,50 @@ test('mobile page: framed preview on a wide screen, full screen on a phone', asy
   assert.equal(phone.statusBar, 'none', 'no drawn status bar on a phone');
   assert.equal(phone.rootWidth, 390, 'the app fills the phone width');
   assert.equal(phone.rootTop, 0, 'the app starts at the top of the screen');
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('installable: manifest and icons load, and React comes from this site', async () => {
+  const { ctx, page, errors } = await openApp('index.html');
+  const res = await page.evaluate(async () => {
+    const href = document.querySelector('link[rel=manifest]').href;
+    const manifest = await (await fetch(href)).json();
+    const icons = await Promise.all(manifest.icons.map(async i => (await fetch(new URL(i.src, href))).status));
+    return { name: manifest.name, start: manifest.start_url, icons };
+  }).catch(e => ({ error: e.message }));
+  assert.equal(res.name, 'History Coloring Books');
+  assert.equal(res.start, './');
+  assert.ok(res.icons.every(s => s === 200), 'every icon loads: ' + res.icons);
+  for (const html of ['History Coloring Books.html', 'History Coloring Books Mobile.html', 'index.html']) {
+    const src = fs.readFileSync(path.join(root, html), 'utf8');
+    assert.doesNotMatch(src, /<script src="https?:/, `${html} loads no outside scripts`);
+  }
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('offline: after one visit, the start page and both versions work with no connection', async () => {
+  const { ctx, page, errors } = await openApp('index.html');
+  // Wait until the service worker has cached the app and controls the page.
+  const installed = await page.evaluate(() => Promise.race([
+    navigator.serviceWorker.ready.then(() => true),
+    new Promise(r => setTimeout(() => r(false), 15000)),
+  ]));
+  assert.ok(installed, 'the service worker installs (sw.js cached every file)');
+  await page.reload();
+  await page.waitForFunction(() => !!navigator.serviceWorker.controller, null, { timeout: 15000 });
+  await ctx.setOffline(true);
+  for (const html of ['History Coloring Books.html', 'History Coloring Books Mobile.html']) {
+    await page.goto(base + encodeURI(html));
+    await page.waitForFunction(() => document.querySelectorAll('svg').length > 20, null, { timeout: 15000 });
+  }
+  await page.goto(base);
+  assert.match(await bodyText(page), /Coloring/i);
+  // An unknown page in the app falls back to the start page instead of the browser's offline error.
+  await page.goto(base + 'no-such-page.html');
+  assert.match(await bodyText(page), /Coloring/i);
+  await ctx.setOffline(false);
   assert.deepEqual(errors, []);
   await ctx.close();
 });

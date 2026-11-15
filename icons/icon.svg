@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- History Coloring Books app icon: an open book with a pyramid picture and a crayon,
+       on heritage red. Artwork stays inside the middle 80% so it also works as a maskable icon. -->
+  <rect width="512" height="512" fill="#C8102E"/>
+  <g stroke="#1F2933" stroke-width="12" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M256 160 C215 130 160 126 112 136 L112 350 C160 340 215 344 256 374 Z" fill="#F6EFE0"/>
+    <path d="M256 160 C297 130 352 126 400 136 L400 350 C352 340 297 344 256 374 Z" fill="#ECE2CC"/>
+    <circle cx="214" cy="184" r="16" fill="#E8A33D" stroke-width="8"/>
+    <path d="M135 290 L180 215 L225 290 Z" fill="#E8A33D"/>
+    <path d="M130 292 L232 292" fill="none" stroke-width="8"/>
+    <path d="M286 200 C316 190 346 190 372 196" fill="none" stroke-width="8"/>
+    <path d="M286 235 C316 225 346 225 372 231" fill="none" stroke-width="8"/>
+    <path d="M292 378.4 L391 279.4 L430.6 319 L331.6 418 Z" fill="#1B4965"/>
+    <path d="M292 378.4 L280 430 L331.6 418 Z" fill="#F6EFE0"/>
+    <path d="M284 412.8 L280 430 L297.2 426 Z" fill="#1B4965" stroke-width="6"/>
+    <path d="M309.7 360.7 L349.3 400.3 M373.3 297.1 L412.9 336.7" stroke="#E8A33D" stroke-width="10"/>
+  </g>
+</svg>

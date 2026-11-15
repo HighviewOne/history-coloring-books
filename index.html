@@ -4,6 +4,13 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>History Coloring Books</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#2C2418">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Coloring Books">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,700;9..144,900&family=Nunito:wght@400;700;800&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -286,5 +293,9 @@
     <p class="footer-note">Best experienced in Chrome or Safari · Progress saved locally</p>
   </div>
 </div>
+<script>
+  // Offline support: sw.js caches the app after the first visit.
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
 </body>
 </html>

@@ -10,6 +10,12 @@ CI must be green.
   `dist/mobile.js`, never the `.jsx` files. CI fails if `dist/` is stale.
 - `npm test` runs `tests/app.test.js` (node:test + playwright-core, offline). Run it before every push.
 - New `.jsx` file → add it to the lists in `build.mjs` (they set the load order).
+- Offline: `sw.js` precaches the files in its `APP_FILES` list (network first, so updates show up
+  online without bumping a version). A new page, script or icon the app needs → add it there, or it
+  breaks offline (the offline test catches a missing precache file only if a page loads it).
+  React is copied into `dist/` by `build.mjs` from `node_modules`; never point the HTML back at a CDN.
+- Icons: edit `icons/icon.svg`, then regenerate the PNGs with ImageMagick (`convert -background none
+  -density 192 icons/icon.svg -resize 512x512 icons/icon-512.png`; also 192 and 180 → apple-touch-icon).
 - `npm run shots` (after `npm run build`) — `tests/shots.js` saves 9 screens (library, coloring,
   celebration, Word Quest, a world page, Grown-Ups gate, dashboard, reading map) for the desktop page at desktop
   1280 and tablet 820, the mobile page at phone 390, and the desktop page at phone 390 (the start page
