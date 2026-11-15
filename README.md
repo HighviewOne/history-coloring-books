@@ -127,7 +127,7 @@ keyboard use, reduced motion, saving and two open tabs.
 /
 ├── index.html                        ← Landing page (GitHub Pages entry point)
 ├── History Coloring Books.html       ← Desktop/tablet entry point
-├── History Coloring Books Mobile.html← Mobile entry point (iPhone frame)
+├── History Coloring Books Mobile.html← Phone entry point (full screen on phones, phone-frame preview on wider screens)
 │
 ├── app.jsx                           ← Desktop routing + state
 ├── mobile-app.jsx                    ← Mobile routing + state
