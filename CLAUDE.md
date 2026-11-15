@@ -10,6 +10,11 @@ CI must be green.
   `dist/mobile.js`, never the `.jsx` files. CI fails if `dist/` is stale.
 - `npm test` runs `tests/app.test.js` (node:test + playwright-core, offline). Run it before every push.
 - New `.jsx` file → add it to the lists in `build.mjs` (they set the load order).
+- `npm run shots` (after `npm run build`) — `tests/shots.js` saves 9 screens (library, coloring,
+  celebration, Word Quest, a world page, Grown-Ups gate, dashboard, reading map) for the desktop page at desktop
+  1280 and tablet 820, the mobile page at phone 390, and the desktop page at phone 390 (the start page
+  offers both). Into `shots/` (git-ignored), offline like the tests, not in CI. Run after any UI change
+  and look the pictures over — they catch what assertions can't (clipping, overlap, tiny canvases).
 
 ## Gotchas
 

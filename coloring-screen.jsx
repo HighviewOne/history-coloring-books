@@ -29,7 +29,9 @@ function CrayonSwatch({ crayon, active, onClick }) {
         <rect x="10" y="22" width="36" height="58" rx="4" fill={isEraser ? '#FFFDF5' : crayon.hex} stroke="#1A1A22" strokeWidth="2.5" />
         {/* label band */}
         <rect x="10" y="44" width="36" height="14" fill="#FFFDF5" stroke="#1A1A22" strokeWidth="1.5" />
-        <text x="28" y="54" textAnchor="middle" fontFamily="Nunito, sans-serif" fontSize="8" fontWeight="800" fill="#1A1A22">{crayon.name.toUpperCase().slice(0, 6)}</text>
+        {/* Full name; the long ones (Sunshine, Caramel, Bubblegum) are squeezed to fit the band */}
+        <text x="28" y="54" textAnchor="middle" fontFamily="Nunito, sans-serif" fontSize="8" fontWeight="800" fill="#1A1A22"
+          {...(crayon.name.length > 6 ? { textLength: 33, lengthAdjust: 'spacingAndGlyphs' } : {})}>{crayon.name.toUpperCase()}</text>
         {/* tip highlight */}
         <polygon points="20,22 36,22 32,30 24,30" fill="rgba(0,0,0,0.18)" />
         {isEraser && (
